@@ -17,13 +17,13 @@ const getCategoryItems = async <T extends SettingsCategory>(tableName: SettingsT
 }
 
 const createCategoryItem = async <T extends SettingsCategory>(tableName: SettingsTableName, name: string): Promise<T> => {
-    const { data, error } = await supabase.from(tableName).insert([{ name }]).select('id, name').single();
+    const { data, error } = await supabase.from(tableName).insert({ name } as any).select('id, name').single();
     if (error) throw error;
     return data as T;
 }
 
 const updateCategoryItem = async <T extends SettingsCategory>(tableName: SettingsTableName, id: string, name: string): Promise<T> => {
-    const { data, error } = await supabase.from(tableName).update({ name }).eq('id', id).select('id, name').single();
+    const { data, error } = await supabase.from(tableName).update({ name } as any).eq('id', id).select('id, name').single();
     if (error) throw error;
     return data as T;
 }
@@ -199,7 +199,7 @@ export const createEmployee = async (formData: EmployeeFormData): Promise<{ empl
                 role: 'employee',
                 first_name: formData.fullName.split(' ')[0],
                 last_name: formData.fullName.split(' ').slice(1).join(' ') || null
-            });
+            } as any);
         
         if (profileError) {
             // NOTE: If this fails, we should delete the auth user we just created.
@@ -232,7 +232,7 @@ export const createEmployee = async (formData: EmployeeFormData): Promise<{ empl
                 bank_name: formData.bankName,
                 account_number: formData.accountNumber,
                 division: formData.division,
-            })
+            } as any)
             .select()
             .single();
 
@@ -272,7 +272,7 @@ export const updateEmployee = async (id: string, formData: UpdateEmployeeFormDat
         bank_name: formData.bankName,
         account_number: formData.accountNumber,
         division: formData.division,
-      })
+      } as any)
       .eq('id', id)
       .select()
       .single();
@@ -336,7 +336,7 @@ export const createPayrollItem = (item: Omit<PayrollItem, 'id'>) => {
         type: item.type,
         calculation_type: item.calculationType,
         is_taxable: item.isTaxable,
-    }).select().single();
+    } as any).select().single();
 };
 
 export const updatePayrollItem = (id: string, item: Omit<PayrollItem, 'id'>) => {
@@ -345,7 +345,7 @@ export const updatePayrollItem = (id: string, item: Omit<PayrollItem, 'id'>) => 
         type: item.type,
         calculation_type: item.calculationType,
         is_taxable: item.isTaxable
-    }).eq('id', id).select().single();
+    } as any).eq('id', id).select().single();
 };
 export const deletePayrollItem = (id: string) => supabase.from('payroll_items').delete().eq('id', id);
 
@@ -367,7 +367,7 @@ export const getEmployeePayrollItems = async (employeeId: string): Promise<Emplo
         item_calculationType: item.payroll_items.calculation_type,
     }));
 };
-export const addEmployeePayrollItem = (employeeId: string, payrollItemId: string, value: number) => supabase.from('employee_payroll_items').insert({ employee_id: employeeId, payroll_item_id: payrollItemId, value });
+export const addEmployeePayrollItem = (employeeId: string, payrollItemId: string, value: number) => supabase.from('employee_payroll_items').insert({ employee_id: employeeId, payroll_item_id: payrollItemId, value } as any);
 export const removeEmployeePayrollItem = (id: string) => supabase.from('employee_payroll_items').delete().eq('id', id);
 
 // Leave Management
@@ -378,21 +378,23 @@ export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
         .order('created_at', { ascending: false });
     if (error) throw error;
     return data.map((req: any) => ({
-        ...req,
+        id: req.id,
+        employeeId: req.employee_id,
+        leaveTypeId: req.leave_type_id,
+        days: req.days,
         employeeName: req.employees.full_name,
         leaveType: req.leave_types.name,
         startDate: req.start_date,
         endDate: req.end_date,
+        status: req.status
     }));
 };
 
-export const updateLeaveRequestStatus = async (id: string, status: 'Approved' | 'Rejected'): Promise<void> => {
+export const updateLeaveRequestStatus = async (request: LeaveRequest, status: 'Approved' | 'Rejected'): Promise<void> => {
     // If approving, we need to debit the balance
     if (status === 'Approved') {
-        const { data: request, error: fetchError } = await supabase.from('leave_requests').select('*').eq('id', id).single();
-        if (fetchError || !request) throw new Error("Could not fetch leave request to update balance.");
-
-        const { data: balance, error: balanceError } = await supabase.from('leave_balances').select('id, balance_days').eq('employee_id', request.employee_id).eq('leave_type_id', request.leave_type_id).single();
+        // Fetch the balance for the specific employee and leave type
+        const { data: balance, error: balanceError } = await supabase.from('leave_balances').select('id, balance_days').eq('employee_id', request.employeeId).eq('leave_type_id', request.leaveTypeId).single();
 
         if (balanceError && balanceError.code !== 'PGRST116') throw new Error("Error fetching current leave balance.");
 
@@ -403,19 +405,21 @@ export const updateLeaveRequestStatus = async (id: string, status: 'Approved' | 
             throw new Error("Approving this request would result in a negative leave balance.");
         }
 
+        // Upsert the new balance. This will create a balance record if one doesn't exist.
         const { error: upsertError } = await supabase.from('leave_balances').upsert({
-            employee_id: request.employee_id,
-            leave_type_id: request.leave_type_id,
+            employee_id: request.employeeId,
+            leave_type_id: request.leaveTypeId,
             balance_days: newBalance,
-        }, { onConflict: 'employee_id, leave_type_id' });
+        } as any, { onConflict: 'employee_id, leave_type_id' });
         
         if (upsertError) throw new Error("Failed to update leave balance.");
     }
     
     // Note: This does not handle reverting an approved request back to pending and crediting the balance.
-    // That would require more complex logic.
+    // That would require more complex logic, ideally in a database function.
 
-    const { error } = await supabase.from('leave_requests').update({ status }).eq('id', id);
+    // Finally, update the status of the leave request itself.
+    const { error } = await supabase.from('leave_requests').update({ status } as any).eq('id', request.id);
     if (error) throw error;
 };
 
@@ -437,7 +441,7 @@ export const upsertTaxBands = async (bands: TaxBand[]) => {
         chargeable_amount: b.chargeableAmount,
         rate: b.rate
     }));
-    const { error } = await supabase.from('tax_bands').upsert(payload);
+    const { error } = await supabase.from('tax_bands').upsert(payload as any);
     if (error) throw error;
 }
 
@@ -457,7 +461,7 @@ export const upsertPayrollSettings = async (settings: PayrollSetting[]) => {
         setting_key: s.settingKey,
         setting_value: s.settingValue,
     }));
-    const { error } = await supabase.from('payroll_settings').upsert(payload);
+    const { error } = await supabase.from('payroll_settings').upsert(payload as any);
     if (error) throw error;
 }
 
@@ -489,7 +493,7 @@ export const savePayrollRun = async (month: number, year: number, data: PayrollD
         // Update existing run
         const { data: updatedRun, error: updateError } = await supabase
             .from('payroll_runs')
-            .update(runPayload)
+            .update(runPayload as any)
             .eq('id', existingRun.id)
             .select()
             .single();
@@ -499,7 +503,7 @@ export const savePayrollRun = async (month: number, year: number, data: PayrollD
         // Insert new run
         const { data: newRun, error: insertError } = await supabase
             .from('payroll_runs')
-            .insert(runPayload)
+            .insert(runPayload as any)
             .select()
             .single();
         if (insertError) throw insertError;
@@ -525,7 +529,7 @@ export const savePayrollRun = async (month: number, year: number, data: PayrollD
             taxable_income: d.taxableIncome
         }));
         
-        const { error: detailsError } = await supabase.from('payroll_details').insert(detailsPayload);
+        const { error: detailsError } = await supabase.from('payroll_details').insert(detailsPayload as any);
         if (detailsError) throw detailsError;
     }
 };
@@ -687,7 +691,7 @@ export const createLeaveRequest = async (formData: LeaveRequestFormData) => {
         start_date: formData.startDate,
         end_date: formData.endDate,
         days: formData.days,
-    });
+    } as any);
     if (error) throw error;
 };
 
@@ -741,7 +745,7 @@ export const uploadEmployeeDocument = async(employeeId: string, file: File) => {
         file_path: filePath,
         file_type: file.type,
         file_size: file.size
-    });
+    } as any);
     if(dbError) throw dbError;
 }
 export const getEmployeeDocumentDownloadUrl = async (filePath: string): Promise<string> => {
@@ -799,7 +803,7 @@ export const updateBrandingSettings = async(settings: { companyName: string | nu
         company_name: settings.companyName,
         company_address: settings.companyAddress,
         logo_url: settings.logoUrl
-    }).eq('id', 1);
+    } as any).eq('id', 1);
     if(error) throw error;
 }
 export const uploadLogo = async (file: File): Promise<string> => {
@@ -821,7 +825,7 @@ export const getCompanyHolidays = async (year: number): Promise<CompanyHoliday[]
     }));
 }
 export const createCompanyHoliday = async (name: string, date: string) => {
-    const { error } = await supabase.from('company_holidays').insert({ name, holiday_date: date });
+    const { error } = await supabase.from('company_holidays').insert({ name, holiday_date: date } as any);
     if(error) throw error;
 }
 export const deleteCompanyHoliday = async (id: string) => {
@@ -851,7 +855,7 @@ export const adjustLeaveBalance = async (employeeId: string, leaveTypeId: string
         employee_id: employeeId,
         leave_type_id: leaveTypeId,
         balance_days: newBalance
-    }, { onConflict: 'employee_id, leave_type_id'});
+    } as any, { onConflict: 'employee_id, leave_type_id'});
     if(error) throw error;
 }
 
@@ -879,7 +883,7 @@ export const uploadPolicyDocument = async (file: File) => {
         file_path: filePath,
         file_type: file.type,
         file_size: file.size,
-    });
+    } as any);
     if (dbError) throw dbError;
 };
 

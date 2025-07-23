@@ -1,11 +1,12 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card } from './common/Card';
 import { getEmployees, getLeaveRequests, getTaxBands, getPayrollSettings } from '../services/api';
-import { Employee, LeaveRequest, PayrollData } from '../types';
+import { Employee, LeaveRequest, PayrollData, PayrollCalculationSettings } from '../types';
 import { LoadingSpinner } from './common/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { calculatePayrollForEmployee, PayrollCalculationSettings } from '../services/payrollCalculations';
+import { calculatePayrollForEmployee } from '../services/payrollCalculations';
 
 export const Dashboard: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);

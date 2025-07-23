@@ -1,14 +1,7 @@
 
 
-import { Employee, PayrollData, TaxBand, PayrollSetting, PayeBandCalculation } from '../types';
 
-export interface PayrollCalculationSettings {
-    taxBands: TaxBand[];
-    napsaRate: number;
-    napsaCeiling: number;
-    nhimaRate: number;
-    nhimaMaxContribution: number;
-}
+import { Employee, PayrollData, TaxBand, PayeBandCalculation, PayrollCalculationSettings } from '../types';
 
 const calculatePaye = (taxableIncome: number, taxBands: TaxBand[]): { totalPaye: number; payeBreakdown: PayeBandCalculation[] } => {
     let totalPaye = 0;

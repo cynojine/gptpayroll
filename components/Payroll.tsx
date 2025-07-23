@@ -1,14 +1,12 @@
 
 
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from './common/Card';
 import { Table, Column } from './common/Table';
 import { getEmployees, getPayrollRun, savePayrollRun, getTaxBands, getPayrollSettings, getFinalizedPayrollDetailsForYear, getBrandingSettings, getLeaveBalances } from '../services/api';
-import { Employee, PayrollData, PayslipDisplayData } from '../types';
+import { Employee, PayrollData, PayslipDisplayData, PayrollCalculationSettings } from '../types';
 import { LoadingSpinner } from './common/LoadingSpinner';
-import { calculatePayrollForEmployee, PayrollCalculationSettings } from '../services/payrollCalculations';
+import { calculatePayrollForEmployee } from '../services/payrollCalculations';
 import { PayslipModal } from './payroll/PayslipModal';
 import { useToast } from '../contexts/ToastContext';
 
@@ -22,6 +20,7 @@ export const Payroll: React.FC = () => {
   const [selectedPayslipData, setSelectedPayslipData] = useState<PayslipDisplayData | null>(null);
   const [runStatus, setRunStatus] = useState<'Draft' | 'Finalized'>('Draft');
   const [payrollSettings, setPayrollSettings] = useState<PayrollCalculationSettings | null>(null);
+  const payrollWorker = useRef<Worker | null>(null);
 
   const currentDate = new Date();
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
@@ -55,6 +54,11 @@ export const Payroll: React.FC = () => {
   const fetchAndProcessPayroll = useCallback(async () => {
     if (!payrollSettings || employees.length === 0) return;
     
+    // Terminate any existing worker before starting a new job
+    if (payrollWorker.current) {
+        payrollWorker.current.terminate();
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -64,18 +68,33 @@ export const Payroll: React.FC = () => {
       if (existingRun && existingRun.payrollData.length > 0) {
         setPayrollData(existingRun.payrollData);
         setRunStatus(existingRun.status as 'Draft' | 'Finalized');
+        setLoading(false);
       } else {
-        const processedData = employees
-          .filter(e => e.status === 'Active')
-          .map(emp => calculatePayrollForEmployee(emp, payrollSettings));
-        setPayrollData(processedData);
+        // No existing run, calculate using the web worker
         setRunStatus('Draft');
+        payrollWorker.current = new Worker(new URL('../services/payroll.worker.ts', import.meta.url), { type: 'module' });
+        
+        payrollWorker.current.onmessage = (e: MessageEvent<{ type: 'SUCCESS' | 'ERROR', payload: any }>) => {
+            if (e.data.type === 'SUCCESS') {
+                setPayrollData(e.data.payload);
+            } else {
+                setError(`Payroll calculation failed: ${e.data.payload}`);
+            }
+            setLoading(false);
+        };
+
+        payrollWorker.current.onerror = (e) => {
+            console.error('Payroll Worker Error:', e);
+            setError('A critical error occurred during payroll calculation.');
+            setLoading(false);
+        };
+
+        payrollWorker.current.postMessage({ employees, payrollSettings });
       }
 
     } catch (err) {
       setError('Failed to load payroll data.');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   }, [month, year, payrollSettings, employees]);
@@ -89,6 +108,15 @@ export const Payroll: React.FC = () => {
         fetchAndProcessPayroll();
     }
   }, [fetchAndProcessPayroll, payrollSettings, employees]);
+
+  // Cleanup worker on component unmount
+  useEffect(() => {
+    return () => {
+        if (payrollWorker.current) {
+            payrollWorker.current.terminate();
+        }
+    };
+  }, []);
 
   const handleSave = async (status: 'Draft' | 'Finalized') => {
     if (status === 'Finalized' && !window.confirm('Are you sure you want to finalize this payroll run? This action cannot be easily undone.')) {
@@ -225,7 +253,7 @@ export const Payroll: React.FC = () => {
           </div>
       )}
 
-      {loading && <LoadingSpinner text="Loading Payroll Data..." />}
+      {loading && <LoadingSpinner text="Calculating Payroll..." />}
       {error && <p className="text-center text-red-400 py-4">{error}</p>}
       {!loading && !error && !payrollSettings && <p className="text-center text-yellow-400 py-4">Payroll settings are not loaded. Please configure them in the Settings page.</p>}
       {!loading && !error && payrollSettings && <Table columns={columns} data={payrollData} />}

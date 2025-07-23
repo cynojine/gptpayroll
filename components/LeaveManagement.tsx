@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import { Card } from './common/Card';
 import { Table } from './common/Table';
@@ -33,20 +31,19 @@ export const LeaveManagement: React.FC = () => {
     fetchLeaveRequests();
   }, []);
   
-  const handleStatusChange = async (id: string, newStatus: 'Approved' | 'Rejected') => {
+  const handleStatusChange = async (request: LeaveRequest, newStatus: 'Approved' | 'Rejected') => {
       const originalRequests = [...leaveRequests];
       const updatedRequests = leaveRequests.map(req => 
-        req.id === id ? { ...req, status: newStatus } : req
+        req.id === request.id ? { ...req, status: newStatus } : req
       );
       setLeaveRequests(updatedRequests);
 
       try {
-        await updateLeaveRequestStatus(id, newStatus);
+        await updateLeaveRequestStatus(request, newStatus);
         addToast(`Leave request has been ${newStatus.toLowerCase()}. Balance updated.`, 'success');
-        // Optionally re-fetch to confirm server state, but optimistic update is usually fine.
-        // await fetchLeaveRequests(); 
+        // No need to re-fetch, the optimistic update and balance logic are sufficient.
       } catch (err) {
-        setLeaveRequests(originalRequests);
+        setLeaveRequests(originalRequests); // Revert on failure
         addToast(`Failed to update status: ${(err as Error).message}`, 'error');
       }
   }
@@ -71,8 +68,8 @@ export const LeaveManagement: React.FC = () => {
       render: (item: LeaveRequest) => (
         item.status === 'Pending' ? (
           <div className="flex space-x-2">
-            <button onClick={() => handleStatusChange(item.id, 'Approved')} className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded transition">Approve</button>
-            <button onClick={() => handleStatusChange(item.id, 'Rejected')} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition">Reject</button>
+            <button onClick={() => handleStatusChange(item, 'Approved')} className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded transition">Approve</button>
+            <button onClick={() => handleStatusChange(item, 'Rejected')} className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded transition">Reject</button>
           </div>
         ) : null
       ),

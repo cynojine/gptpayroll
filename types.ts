@@ -1,5 +1,6 @@
 
 
+
 export type Json = any;
 
 export interface BrandingSettings {
@@ -177,6 +178,14 @@ export interface PayrollData {
   taxableIncome: number;
   netPay: number;
   breakdown: PayrollBreakdown;
+}
+
+export interface PayrollCalculationSettings {
+    taxBands: TaxBand[];
+    napsaRate: number;
+    napsaCeiling: number;
+    nhimaRate: number;
+    nhimaMaxContribution: number;
 }
 
 export interface PayslipDisplayData {
