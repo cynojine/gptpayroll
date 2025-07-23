@@ -136,7 +136,6 @@ export interface EmployeeFormData {
   bankName: string;
   accountNumber: string;
   division: string;
-  password?: string;
 }
 
 export interface UpdateEmployeeFormData extends Omit<EmployeeFormData, 'password'> {
@@ -251,6 +250,16 @@ export interface LeaveBalance {
     leaveTypeName?: string; // For display purposes
 }
 
+export interface PolicyDocument {
+  id: string;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+
 export interface Database {
   public: {
     Tables: {
@@ -309,6 +318,11 @@ export interface Database {
         Insert: { id?: string; employee_id: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at?: string; };
         Update: { id?: string; employee_id?: string; file_name?: string; file_path?: string; file_type?: string; file_size?: number; uploaded_at?: string; };
       };
+       policy_documents: {
+        Row: { id: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at: string; };
+        Insert: { id?: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at?: string; };
+        Update: { id?: string; file_name?: string; file_path?: string; file_type?: string; file_size?: number; uploaded_at?: string; };
+      };
       company_holidays: {
         Row: { id: string; name: string; holiday_date: string; };
         Insert: { id?: string; name: string; holiday_date: string; };
@@ -327,3 +341,4 @@ export interface Database {
 
 export type SettingsTableName = 'departments' | 'job_titles' | 'contract_types' | 'leave_types';
 export type EssView = 'Dashboard' | 'My Profile' | 'My Payslips' | 'My Leave' | 'My Documents';
+export type View = 'Dashboard' | 'Employees' | 'Payroll' | 'Leave' | 'Reports' | 'Policy Assistant' | 'Settings';

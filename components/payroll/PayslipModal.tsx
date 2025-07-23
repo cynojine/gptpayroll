@@ -179,4 +179,18 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, dat
         </div>
          <div className="grid grid-cols-12 border-b-2 border-black">
             <PayslipField label="Bank Name" value={employee.bank_name} className="col-span-3 p-1" />
-            <PayslipField label="Taxable This Month" value={formatNumber(monthlyData.taxableIncome)} className="col-
+            <PayslipField label="Taxable This Month" value={formatNumber(monthlyData.taxableIncome)} className="col-span-3 p-1 text-right" />
+            <PayslipField label="Gross YTD" value={formatNumber(ytdData.grossYTD)} className="col-span-3 p-1 text-right" />
+            <PayslipField label={`Net Pay (BANK) ${currency}`} value={formatNumber(netPay)} className="col-span-3 p-1 text-right font-bold text-base" />
+        </div>
+         <div className="grid grid-cols-12 border-b-2 border-black">
+            <PayslipField label="Account No" value={employee.account_number} className="col-span-3 p-1" />
+            <PayslipField label="Department" value={employee.department} className="col-span-3 p-1" />
+            <PayslipField label="Division" value={employee.division} className="col-span-3 p-1" />
+            <PayslipField label="Job Title" value={employee.jobTitle} className="col-span-3 p-1" />
+        </div>
+      </div>
+       <PrintStyles />
+    </Modal>
+  );
+};

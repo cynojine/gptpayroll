@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { getMyPayslips, getEmployeeDataForUser, getFinalizedPayrollDetailsForYear, getBrandingSettings } from '../../services/api';
+import { getMyPayslips, getEmployeeDataForUser, getFinalizedPayrollDetailsForYear, getBrandingSettings, getMyLeaveBalances } from '../../services/api';
 import { PayrollData, PayslipDisplayData } from '../../types';
 import { PayslipModal } from '../payroll/PayslipModal';
 import { PayrollIcon } from '../icons/IconComponents';
@@ -38,9 +38,10 @@ export const MyPayslips: React.FC = () => {
     const handleViewDetails = async (monthlyData: PayrollData & { period: string }) => {
         setIsModalLoading(true);
         try {
-            const [employee, branding] = await Promise.all([
+            const [employee, branding, leaveBalances] = await Promise.all([
                 getEmployeeDataForUser(),
-                getBrandingSettings()
+                getBrandingSettings(),
+                getMyLeaveBalances()
             ]);
 
             if (!employee) {
@@ -57,7 +58,7 @@ export const MyPayslips: React.FC = () => {
             const ytdHistory = await getFinalizedPayrollDetailsForYear(employee.id, year);
             
             const ytdData = ytdHistory.reduce((acc, item) => {
-                if ((item as any).payroll_run.month <= currentPayslipMonth) {
+                if ((item as any).month <= currentPayslipMonth) {
                     acc.grossYTD += item.gross_pay;
                     acc.taxablePayYTD += item.taxable_income;
                     acc.taxYTD += item.paye;
@@ -66,6 +67,8 @@ export const MyPayslips: React.FC = () => {
                 return acc;
             }, { taxablePayYTD: 0, taxYTD: 0, napsaYTD: 0, grossYTD: 0 });
 
+            const annualLeaveBalance = leaveBalances.find(b => b.leaveTypeName?.toLowerCase().includes('annual'))?.balanceDays || 0;
+            const leaveValue = (employee.salary / 22) * annualLeaveBalance; // Assuming 22 working days/month
 
             const displayData: PayslipDisplayData = {
                 employee,
@@ -74,10 +77,10 @@ export const MyPayslips: React.FC = () => {
                 branding,
                 currency: 'ZMW',
                 period: monthlyData.period,
-                leaveData: { // Mock data as in Payroll.tsx
-                    leaveDays: 19.00,
-                    leaveValue: 2046.15,
-                    leaveDaysTaken: 1.00
+                leaveData: {
+                    balance: annualLeaveBalance,
+                    leaveValue: leaveValue,
+                    leaveDaysTaken: 1.00, // Placeholder
                 }
             };
 
@@ -85,7 +88,7 @@ export const MyPayslips: React.FC = () => {
 
         } catch (err) {
             console.error(err);
-            addToast("Failed to prepare payslip details.", "error");
+            addToast(`Failed to prepare payslip details: ${(err as Error).message}`, "error");
         } finally {
             setIsModalLoading(false);
         }

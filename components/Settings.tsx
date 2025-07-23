@@ -1,6 +1,5 @@
 
 
-
 import React, { useState } from 'react';
 import { Card } from './common/Card';
 import { SettingsCategoryManager } from './settings/SettingsCategoryManager';
@@ -11,18 +10,21 @@ import { TaxBandManager } from './settings/TaxBandManager';
 import { StatutorySettingsManager } from './settings/StatutorySettingsManager';
 import { BrandingManager } from './settings/BrandingManager';
 import { HolidayManager } from './settings/HolidayManager';
+import { PolicyDocumentManager } from './settings/PolicyDocumentManager';
 
-type Tab = 'Branding' | 'Departments' | 'Job Titles' | 'Contract Types' | 'Leave Types' | 'Payroll Items' | 'Statutory & Tax' | 'Holidays';
+type Tab = 'Branding' | 'Company Policies' | 'Holidays' | 'Departments' | 'Job Titles' | 'Contract Types' | 'Leave Types' | 'Payroll Items' | 'Statutory & Tax';
 
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('Branding');
 
-  const tabs: Tab[] = ['Branding', 'Holidays', 'Departments', 'Job Titles', 'Contract Types', 'Leave Types', 'Payroll Items', 'Statutory & Tax'];
+  const tabs: Tab[] = ['Branding', 'Company Policies', 'Holidays', 'Departments', 'Job Titles', 'Contract Types', 'Leave Types', 'Payroll Items', 'Statutory & Tax'];
 
   const renderContent = () => {
     switch(activeTab) {
       case 'Branding':
         return <BrandingManager />;
+      case 'Company Policies':
+        return <PolicyDocumentManager />;
       case 'Holidays':
         return <HolidayManager />;
       case 'Departments':
@@ -93,43 +95,7 @@ export const Settings: React.FC = () => {
           </nav>
         </div>
         <div className="pt-6">
-          {activeTab === 'Branding' && <BrandingManager />}
-          {activeTab === 'Holidays' && <HolidayManager />}
-          {activeTab === 'Departments' && <SettingsCategoryManager<Department> 
-                    categoryName="Department"
-                    fetchItems={api.getDepartments}
-                    createItem={api.createDepartment}
-                    updateItem={api.updateDepartment}
-                    deleteItem={api.deleteDepartment}
-                />}
-          {activeTab === 'Job Titles' && <SettingsCategoryManager<JobTitle>
-                    categoryName="Job Title"
-                    fetchItems={api.getJobTitles}
-                    createItem={api.createJobTitle}
-                    updateItem={api.updateJobTitle}
-                    deleteItem={api.deleteJobTitle}
-                />}
-          {activeTab === 'Contract Types' && <SettingsCategoryManager<ContractType>
-                    categoryName="Contract Type"
-                    fetchItems={api.getContractTypes}
-                    createItem={api.createContractType}
-                    updateItem={api.updateContractType}
-                    deleteItem={api.deleteContractType}
-                />}
-          {activeTab === 'Leave Types' && <SettingsCategoryManager<LeaveType>
-                    categoryName="Leave Type"
-                    fetchItems={api.getLeaveTypes}
-                    createItem={api.createLeaveType}
-                    updateItem={api.updateLeaveType}
-                    deleteItem={api.deleteLeaveType}
-                />}
-          {activeTab === 'Payroll Items' && <PayrollItemManager />}
-          {activeTab === 'Statutory & Tax' && (
-            <div className="space-y-8">
-              <TaxBandManager />
-              <StatutorySettingsManager />
-            </div>
-          )}
+          {renderContent()}
         </div>
       </Card>
     </div>

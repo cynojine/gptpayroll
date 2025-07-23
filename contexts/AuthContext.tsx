@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
-import { getProfileForUser } from '../services/api';
-import { Profile } from '../types';
+import { getProfileForUser, getBrandingSettings } from '../services/api';
+import { Profile, BrandingSettings } from '../types';
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  branding: BrandingSettings | null;
   loading: boolean;
   signOut: () => void;
 }
@@ -18,36 +19,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [branding, setBranding] = useState<BrandingSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSessionAndProfile = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-
-      if (currentSession?.user) {
-        const userProfile = await getProfileForUser();
-        setProfile(userProfile);
-      }
-      setLoading(false);
+    const initializeSession = async () => {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            const [brandingSettings, userProfile] = await Promise.all([
+                getBrandingSettings(),
+                session?.user ? getProfileForUser() : Promise.resolve(null),
+            ]);
+            
+            setBranding(brandingSettings);
+            setProfile(userProfile);
+        } catch (error) {
+            console.error("Error during session initialization:", error);
+        } finally {
+            setLoading(false);
+        }
     };
-
-    fetchSessionAndProfile();
+    
+    initializeSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
-        const userProfile = await getProfileForUser();
-        setProfile(userProfile);
-      } else {
-        setProfile(null);
-      }
+      const userProfile = session?.user ? await getProfileForUser() : null;
+      setProfile(userProfile);
       
-      // If this is the initial load, stop loading.
-      if (loading) setLoading(false);
+      // If auth state changes, we are no longer in the initial loading state.
+      setLoading(false);
     });
 
     return () => {
@@ -67,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     session,
     user,
     profile,
+    branding,
     loading,
     signOut,
   };

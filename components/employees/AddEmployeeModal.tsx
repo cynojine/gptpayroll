@@ -32,14 +32,13 @@ const initialFormData: EmployeeFormData = {
   bankName: '',
   accountNumber: '',
   division: '',
-  password: '',
 };
 
 export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onEmployeeAdded }) => {
   const [formData, setFormData] = useState<EmployeeFormData>(initialFormData);
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [creationResult, setCreationResult] = useState<{ email: string; password: string } | null>(null);
   const [settings, setSettings] = useState<{
     departments: Department[];
     jobTitles: JobTitle[];
@@ -72,11 +71,19 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
       fetchSettings();
       // Reset form on open
       setFormData(initialFormData);
-      setConfirmPassword('');
       setError(null);
       setIsSubmitting(false);
+      setCreationResult(null);
     }
   }, [isOpen]);
+
+  const handleModalClose = () => {
+    if (creationResult) {
+        onEmployeeAdded(); // This also closes the modal and refreshes the list
+    } else {
+        onClose();
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -90,14 +97,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (formData.password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (formData.password && formData.password.length < 6) {
-        setError('Password must be at least 6 characters long.');
-        return;
-    }
     if (!formData.departmentId || !formData.jobTitleId || !formData.contractTypeId) {
         setError('Please select a department, job title, and contract type.');
         return;
@@ -105,48 +104,24 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
 
     setIsSubmitting(true);
     setError(null);
-
     try {
-      await api.createEmployee(formData);
-      onEmployeeAdded();
+      const { temporaryPassword } = await api.createEmployee(formData);
+      setCreationResult({ email: formData.email, password: temporaryPassword });
     } catch (err: any) {
       setError(err.message || 'Failed to create employee. The email or NRC may already exist.');
-    } finally {
       setIsSubmitting(false);
     }
   };
+  
+  const handleCopyToClipboard = () => {
+    if (creationResult) {
+        navigator.clipboard.writeText(creationResult.password);
+        alert('Password copied to clipboard!');
+    }
+  };
 
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Add New Employee"
-      footer={
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            form="add-employee-form"
-            disabled={isSubmitting || settings.loading}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : 'Add Employee'}
-          </button>
-        </>
-      }
-    >
-      {settings.loading ? (
-        <LoadingSpinner text="Loading form data..." />
-      ) : settings.error ? (
-        <p className="text-center text-red-400">{settings.error}</p>
-      ) : (
-        <form id="add-employee-form" onSubmit={handleSubmit}>
+  const renderForm = () => (
+     <form id="add-employee-form" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <label htmlFor="fullName" className="block text-sm font-medium">Full Name</label>
@@ -235,22 +210,69 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                 <label htmlFor="accountNumber" className="block text-sm font-medium">Account No.</label>
                 <input type="text" name="accountNumber" id="accountNumber" value={formData.accountNumber} onChange={handleChange} className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
             </div>
-             <div className="lg:col-span-3 border-t border-slate-700 my-4"></div>
-             <div className="lg:col-span-3">
-                <h4 className="text-lg font-semibold text-slate-200 mb-2">Login Credentials</h4>
-             </div>
-             <div>
-                <label htmlFor="password" className="block text-sm font-medium">Password</label>
-                <input type="password" name="password" id="password" value={formData.password} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
-             </div>
-             <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium">Confirm Password</label>
-                <input type="password" name="confirmPassword" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
-             </div>
           </div>
           {error && <p className="text-center text-red-400 mt-4">{error}</p>}
         </form>
-      )}
+  );
+
+  const renderSuccess = () => (
+      <div className="text-center p-4">
+          <svg className="w-16 h-16 mx-auto text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-xl font-bold text-white mt-4">Employee Created Successfully!</h3>
+          <p className="text-slate-400 mt-2">A user account has been created for <span className="font-semibold text-slate-200">{creationResult?.email}</span>.</p>
+          <p className="text-slate-400 mt-1">Please provide them with the following temporary password and advise them to change it upon their first login.</p>
+          
+          <div className="my-6 p-4 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center space-x-4">
+              <span className="text-2xl font-mono tracking-widest text-emerald-400">{creationResult?.password}</span>
+              <button onClick={handleCopyToClipboard} className="text-slate-400 hover:text-white" title="Copy to clipboard">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              </button>
+          </div>
+      </div>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleModalClose}
+      title={creationResult ? 'Account Created' : 'Add New Employee'}
+      footer={
+        creationResult ? (
+             <button
+                type="button"
+                onClick={handleModalClose}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+             >
+                Done
+            </button>
+        ) : (
+            <>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    form="add-employee-form"
+                    disabled={isSubmitting || settings.loading}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-slate-500 disabled:cursor-not-allowed"
+                >
+                    {isSubmitting ? 'Saving...' : 'Add Employee'}
+                </button>
+            </>
+        )
+      }
+    >
+      {isSubmitting ? <LoadingSpinner text="Creating employee..." /> :
+       settings.loading ? <LoadingSpinner text="Loading form data..." /> : 
+       settings.error ? <p className="text-center text-red-400">{settings.error}</p> :
+       creationResult ? renderSuccess() : renderForm()
+      }
     </Modal>
   );
 };

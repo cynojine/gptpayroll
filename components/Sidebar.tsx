@@ -1,13 +1,15 @@
 
-import React from 'react';
-import { DashboardIcon, EmployeeIcon, PayrollIcon, ReportsIcon, LeaveIcon, PolicyIcon, ZambianFlag, SettingsIcon } from './icons/IconComponents';
-import { useAuth } from '../contexts/AuthContext';
 
-export type View = 'Dashboard' | 'Employees' | 'Payroll' | 'Leave' | 'Reports' | 'SQL Generator' | 'Settings';
+import React from 'react';
+import { DashboardIcon, EmployeeIcon, PayrollIcon, ReportsIcon, LeaveIcon, PolicyIcon, SettingsIcon, CloseIcon } from './icons/IconComponents';
+import { useAuth } from '../contexts/AuthContext';
+import { View } from '../types';
 
 interface SidebarProps {
   activeView: View;
   setActiveView: (view: View) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface NavItemProps {
@@ -35,8 +37,13 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => 
   </li>
 );
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
-  const { profile } = useAuth();
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isOpen, onClose }) => {
+  const { profile, branding } = useAuth();
+
+  const handleNavClick = (view: View) => {
+    setActiveView(view);
+    onClose(); // Close sidebar on mobile after navigation
+  };
 
   const navItems: { label: View; icon: React.ReactNode; adminOnly?: boolean }[] = [
     { label: 'Dashboard', icon: <DashboardIcon className="w-6 h-6" /> },
@@ -44,15 +51,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
     { label: 'Payroll', icon: <PayrollIcon className="w-6 h-6" /> },
     { label: 'Leave', icon: <LeaveIcon className="w-6 h-6" /> },
     { label: 'Reports', icon: <ReportsIcon className="w-6 h-6" /> },
-    { label: 'SQL Generator', icon: <PolicyIcon className="w-6 h-6" /> },
+    { label: 'Policy Assistant', icon: <PolicyIcon className="w-6 h-6" /> },
     { label: 'Settings', icon: <SettingsIcon className="w-6 h-6" />, adminOnly: true },
   ];
 
+  const BrandHeader: React.FC = () => (
+    <div className="flex items-center justify-center h-16 mb-6">
+      {branding?.logoUrl ? (
+        <img src={branding.logoUrl} alt={`${branding.companyName || 'Company'} Logo`} className="max-h-14 object-contain" />
+      ) : (
+        <span className="font-bold text-xl text-slate-100">{branding?.companyName || 'GPTPayroll'}</span>
+      )}
+    </div>
+  );
+
   return (
-    <aside className="w-64 flex-shrink-0 bg-slate-800 p-4 flex flex-col shadow-2xl">
-      <div className="flex items-center justify-center h-16 mb-6">
-        <ZambianFlag />
+    <aside className={`fixed inset-y-0 left-0 z-30 w-64 flex-shrink-0 bg-slate-800 p-4 flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 lg:flex`}>
+      <div className="flex items-center justify-between">
+        <BrandHeader />
+        <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white">
+          <CloseIcon className="w-6 h-6" />
+        </button>
       </div>
+
       <nav className="flex-1">
         <ul className="space-y-3">
           {navItems.map((item) => {
@@ -65,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
                 icon={item.icon}
                 label={item.label}
                 isActive={activeView === item.label}
-                onClick={() => setActiveView(item.label)}
+                onClick={() => handleNavClick(item.label)}
               />
             );
           })}
@@ -77,8 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
             Role: <span className="font-bold capitalize text-slate-400">{profile.role}</span>
           </p>
         )}
-        <p>&copy; {new Date().getFullYear()} GPTPayroll Inc.</p>
-        <p>Made for Zambia</p>
+        <p>&copy; {new Date().getFullYear()} {branding?.companyName || 'GPTPayroll Inc.'}</p>
+        <p>Made for Zambia 🇿🇲</p>
       </div>
     </aside>
   );

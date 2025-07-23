@@ -1,34 +1,18 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { LeaveRequest, LeaveType, LeaveRequestFormData } from '../../types';
+import { LeaveRequest, LeaveType, LeaveRequestFormData, LeaveBalance, CompanyHoliday } from '../../types';
 import * as api from '../../services/api';
-import dayjs from 'dayjs';
 import { Table, Column } from '../common/Table';
-
-const calculateLeaveDays = (start: string, end: string): number => {
-    if (!start || !end) return 0;
-    let count = 0;
-    let current = dayjs(start);
-    const endDate = dayjs(end);
-
-    if (endDate.isBefore(current)) return 0;
-
-    while (current.isBefore(endDate) || current.isSame(endDate, 'day')) {
-        const dayOfWeek = current.day(); // Sunday = 0, Saturday = 6
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-            count++;
-        }
-        current = current.add(1, 'day');
-    }
-    return count;
-};
-
+import { calculateBusinessDays } from '../../services/leaveCalculations';
 
 export const MyLeave: React.FC = () => {
     const [history, setHistory] = useState<LeaveRequest[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+    const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+    const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,12 +27,17 @@ export const MyLeave: React.FC = () => {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const [fetchedHistory, fetchedLeaveTypes] = await Promise.all([
+            const currentYear = new Date().getFullYear();
+            const [fetchedHistory, fetchedLeaveTypes, fetchedBalances, fetchedHolidays] = await Promise.all([
                 api.getMyLeaveRequests(),
-                api.getLeaveTypes()
+                api.getLeaveTypes(),
+                api.getMyLeaveBalances(),
+                api.getCompanyHolidays(currentYear)
             ]);
             setHistory(fetchedHistory);
             setLeaveTypes(fetchedLeaveTypes);
+            setLeaveBalances(fetchedBalances);
+            setHolidays(fetchedHolidays);
             setError(null);
         } catch (err) {
             console.error(err);
@@ -63,9 +52,9 @@ export const MyLeave: React.FC = () => {
     }, [loadData]);
 
     useEffect(() => {
-        const days = calculateLeaveDays(formData.startDate, formData.endDate);
+        const days = calculateBusinessDays(formData.startDate, formData.endDate, holidays);
         setCalculatedDays(days);
-    }, [formData.startDate, formData.endDate]);
+    }, [formData.startDate, formData.endDate, holidays]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -73,8 +62,14 @@ export const MyLeave: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.leaveTypeId || !formData.startDate || !formData.endDate || calculatedDays <= 0 || isSubmitting) {
+        const currentBalance = leaveBalances.find(b => b.leaveTypeId === formData.leaveTypeId)?.balanceDays || 0;
+
+        if (!formData.leaveTypeId || !formData.startDate || !formData.endDate || calculatedDays <= 0) {
             setError("Please fill all fields correctly. Number of days must be greater than zero.");
+            return;
+        }
+        if (calculatedDays > currentBalance) {
+            setError("Your leave request exceeds your available balance for this leave type.");
             return;
         }
 
@@ -112,6 +107,8 @@ export const MyLeave: React.FC = () => {
         },
     ];
 
+    const currentBalance = leaveBalances.find(b => b.leaveTypeId === formData.leaveTypeId)?.balanceDays;
+
     return (
         <div className="space-y-6">
             <Card>
@@ -123,6 +120,11 @@ export const MyLeave: React.FC = () => {
                             <option value="" disabled>Select a type...</option>
                             {leaveTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
                         </select>
+                        {formData.leaveTypeId && (
+                            <p className="text-xs text-slate-400 mt-1">
+                                Balance: <span className="font-bold text-white">{currentBalance !== undefined ? `${currentBalance.toFixed(2)} days` : 'N/A'}</span>
+                            </p>
+                        )}
                     </div>
                     <div>
                         <label htmlFor="startDate" className="block text-sm font-medium">Start Date</label>
@@ -133,7 +135,7 @@ export const MyLeave: React.FC = () => {
                         <input type="date" id="endDate" name="endDate" value={formData.endDate} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500" />
                     </div>
                     <div className="flex flex-col items-start space-y-2">
-                        <p className="text-sm text-slate-400">Total Days: <span className="font-bold text-lg text-white">{calculatedDays}</span></p>
+                        <p className="text-sm text-slate-400">Calculated Days: <span className="font-bold text-lg text-white">{calculatedDays}</span></p>
                         <button type="submit" disabled={isSubmitting || calculatedDays <= 0} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-500 disabled:cursor-not-allowed">
                             {isSubmitting ? 'Submitting...' : 'Submit Request'}
                         </button>

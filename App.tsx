@@ -1,6 +1,8 @@
 
+
 import React, { useState } from 'react';
-import { Sidebar, View } from './components/Sidebar';
+import { Sidebar } from './components/Sidebar';
+import { View } from './types';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { EmployeeList } from './components/EmployeeList';
@@ -16,6 +18,7 @@ import { EmployeePortal } from './components/ess/EmployeePortal';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { session, profile, loading } = useAuth();
 
   if (loading) {
@@ -37,16 +40,27 @@ const App: React.FC = () => {
   // Admin View
   return (
     <div className="flex h-screen bg-slate-900 text-slate-200">
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
+      {/* Overlay for mobile */}
+      {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-20 lg:hidden" />}
+
+      <Sidebar 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header currentView={activeView} />
+        <Header 
+          currentView={activeView} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+        />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-900 p-6 lg:p-8">
           {activeView === 'Dashboard' && <Dashboard />}
           {activeView === 'Employees' && <EmployeeList />}
           {activeView === 'Payroll' && <Payroll />}
           {activeView === 'Leave' && <LeaveManagement />}
           {activeView === 'Reports' && <Reports />}
-          {activeView === 'SQL Generator' && <PolicyAssistant />}
+          {activeView === 'Policy Assistant' && <PolicyAssistant />}
           {activeView === 'Settings' && <Settings />}
         </main>
       </div>

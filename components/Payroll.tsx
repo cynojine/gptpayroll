@@ -1,10 +1,11 @@
 
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from './common/Card';
 import { Table, Column } from './common/Table';
-import { getEmployees, getPayrollRun, savePayrollRun, getTaxBands, getPayrollSettings, getFinalizedPayrollDetailsForYear, getBrandingSettings } from '../services/api';
+import { getEmployees, getPayrollRun, savePayrollRun, getTaxBands, getPayrollSettings, getFinalizedPayrollDetailsForYear, getBrandingSettings, getLeaveBalances } from '../services/api';
 import { Employee, PayrollData, PayslipDisplayData } from '../types';
 import { LoadingSpinner } from './common/LoadingSpinner';
 import { calculatePayrollForEmployee, PayrollCalculationSettings } from '../services/payrollCalculations';
@@ -116,10 +117,11 @@ export const Payroll: React.FC = () => {
         return;
     }
 
-    // Fetch branding and YTD data in parallel
-    const [branding, ytdHistory] = await Promise.all([
+    // Fetch branding, YTD data, and leave balances in parallel
+    const [branding, ytdHistory, leaveBalances] = await Promise.all([
         getBrandingSettings(),
-        getFinalizedPayrollDetailsForYear(employee.id, year)
+        getFinalizedPayrollDetailsForYear(employee.id, year),
+        getLeaveBalances(employee.id)
     ]);
 
     const ytdData = ytdHistory.reduce((acc, item) => {
@@ -136,6 +138,10 @@ export const Payroll: React.FC = () => {
     ytdData.taxYTD += monthlyData.breakdown.statutory.paye;
     ytdData.napsaYTD += monthlyData.breakdown.statutory.napsa;
 
+    // Find the annual leave balance, or the first available balance
+    const annualLeaveBalance = leaveBalances.find(b => b.leaveTypeName?.toLowerCase().includes('annual'))?.balanceDays || leaveBalances[0]?.balanceDays || 0;
+    const leaveValue = (employee.salary / 22) * annualLeaveBalance; // Assuming 22 working days/month
+
     const displayData: PayslipDisplayData = {
         employee,
         monthlyData,
@@ -143,10 +149,10 @@ export const Payroll: React.FC = () => {
         branding,
         currency: 'ZMW',
         period: `${new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`,
-        leaveData: { // Mock data as leave balance isn't tracked yet
-            leaveDays: 19.00,
-            leaveValue: 2046.15,
-            leaveDaysTaken: 1.00
+        leaveData: {
+            balance: annualLeaveBalance,
+            leaveValue: leaveValue,
+            leaveDaysTaken: 1.00 // Placeholder
         }
     };
     setSelectedPayslipData(displayData);

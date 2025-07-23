@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { EmployeeSidebar } from './EmployeeSidebar';
 import { Header } from '../Header';
@@ -12,12 +11,24 @@ import { MyDocuments } from './MyDocuments';
 
 export const EmployeePortal: React.FC = () => {
     const [activeView, setActiveView] = useState<EssView>('Dashboard');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     
     return (
         <div className="flex h-screen bg-slate-900 text-slate-200">
-            <EmployeeSidebar activeView={activeView} setActiveView={setActiveView} />
+            {/* Overlay for mobile */}
+            {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-20 lg:hidden" />}
+            
+            <EmployeeSidebar 
+              activeView={activeView} 
+              setActiveView={setActiveView} 
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header currentView={activeView} />
+                <Header 
+                    currentView={activeView} 
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                />
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-900 p-6 lg:p-8">
                     {activeView === 'Dashboard' && <EmployeeDashboard />}
                     {activeView === 'My Profile' && <MyProfile />}

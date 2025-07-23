@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { ZambianFlag } from '../icons/IconComponents';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const Auth: React.FC = () => {
+  const { branding } = useAuth();
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,14 +19,16 @@ export const Auth: React.FC = () => {
 
     try {
       if (isLoginView) {
+        // v2 compatibility
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // v2 compatibility
         const { error } = await supabase.auth.signUp({ 
             email, 
             password,
             options: {
-                emailRedirectTo: window.location.origin,
+                emailRedirectTo: window.location.origin
             }
         });
         if (error) throw error;
@@ -38,13 +41,21 @@ export const Auth: React.FC = () => {
     }
   };
 
+  const BrandHeader: React.FC = () => (
+    <div className="inline-block mb-4 h-16 flex items-center justify-center">
+      {branding?.logoUrl ? (
+        <img src={branding.logoUrl} alt={`${branding.companyName || 'Company'} Logo`} className="max-h-16 object-contain" />
+      ) : (
+        <span className="font-bold text-2xl text-slate-100">{branding?.companyName || 'GPTPayroll'}</span>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-900">
       <div className="w-full max-w-md p-8 space-y-8 bg-slate-800 rounded-2xl shadow-2xl">
         <div className="text-center">
-          <div className="inline-block mb-4">
-            <ZambianFlag />
-          </div>
+          <BrandHeader />
           <h2 className="text-3xl font-extrabold text-white">
             {isLoginView ? 'Sign in to your account' : 'Create a new account'}
           </h2>
