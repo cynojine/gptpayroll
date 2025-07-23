@@ -15,7 +15,9 @@
     "@google/genai": "^1.10.0",
     "recharts": "2.12.7?deps=react@18.2.0",
     "@supabase/supabase-js": "^2.45.0",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "jspdf": "2.5.1",
+    "html2canvas": "1.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

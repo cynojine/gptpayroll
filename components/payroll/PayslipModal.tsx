@@ -1,9 +1,10 @@
 
 
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { PayslipDisplayData } from '../../types';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface PayslipModalProps {
   isOpen: boolean;
@@ -23,35 +24,8 @@ const PayslipField: React.FC<{ label: string; value: string | number | null | un
     </div>
 );
 
-const PrintStyles: React.FC = () => (
-    <style>{`
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        #payslip-content, #payslip-content * {
-          visibility: visible;
-        }
-        #payslip-content {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          color: black !important;
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact;
-        }
-        .payslip-print-area {
-            font-size: 10px !important;
-        }
-        .font-bold {
-            font-weight: 700 !important;
-        }
-      }
-    `}</style>
-)
-
 export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, data }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
   const { employee, period, branding, currency, monthlyData, ytdData, leaveData } = data;
   const { breakdown, netPay } = monthlyData;
 
@@ -69,15 +43,48 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, dat
       ...breakdown.additions.map(a => ({ name: a.name.toUpperCase(), amount: a.amount }))
   ];
   
-  const handlePrint = () => {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-          const content = document.getElementById('payslip-content')?.innerHTML;
-          printWindow.document.write(`<html><head><title>Payslip</title><script src="https://cdn.tailwindcss.com"></script><style>body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: sans-serif; } .payslip-print-area { font-size: 10px !important; } .font-bold { font-weight: 700 !important; } .text-right { text-align: right; }</style></head><body>${content}</body></html>`);
-          printWindow.document.close();
-          printWindow.focus();
-          printWindow.print();
-      }
+  const handleDownloadPdf = async () => {
+    const payslipElement = document.getElementById('payslip-content');
+    if (!payslipElement || isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(payslipElement, {
+        scale: 2, // Use a higher scale for better resolution
+        useCORS: true, // Important for external images like logos
+        backgroundColor: '#ffffff', // Explicitly set background to white
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Using 'p' for portrait, 'mm' for millimeters, and 'a4' for page size.
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
+
+      // Calculate the ratio to fit the image in the PDF page.
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+
+      // Center the image on the PDF page
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = 0;
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      pdf.save(`payslip_${data.employee.fullName.replace(/\s/g, '_')}_${data.period.replace(/\s/g, '_')}.pdf`);
+
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("An error occurred while generating the PDF. Please try again.");
+    } finally {
+        setIsDownloading(false);
+    }
   };
 
 
@@ -90,7 +97,9 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, dat
         footer={
             <>
                 <button onClick={onClose} className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
-                <button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Print</button>
+                <button onClick={handleDownloadPdf} disabled={isDownloading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-wait">
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
+                </button>
             </>
         }
     >
@@ -190,7 +199,6 @@ export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, dat
             <PayslipField label="Job Title" value={employee.jobTitle} className="col-span-3 p-1" />
         </div>
       </div>
-       <PrintStyles />
     </Modal>
   );
 };
