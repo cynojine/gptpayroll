@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { EmployeeFormData, Department, JobTitle, ContractType } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { useToast } from '../../contexts/ToastContext';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -11,9 +12,9 @@ interface AddEmployeeModalProps {
 }
 
 export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onEmployeeAdded }) => {
+  const { addToast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [successResult, setSuccessResult] = React.useState<{ email: string; password: string; } | null>(null);
   
   const [settings, setSettings] = React.useState<{
     departments: Department[];
@@ -34,7 +35,6 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
   React.useEffect(() => {
     if (isOpen) {
       // Reset state when modal opens
-      setSuccessResult(null);
       setError(null);
       setLoading(false);
       formRef.current?.reset();
@@ -91,28 +91,14 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
       }
 
       try {
-        const { temporaryPassword } = await api.createEmployee(employeeData);
-        setSuccessResult({ email: employeeData.email, password: temporaryPassword });
+        await api.createEmployee(employeeData);
+        addToast('Employee created successfully!', 'success');
+        onEmployeeAdded(); // This closes modal and refreshes list
       } catch (err: any) {
         setError(err.message || 'Failed to create employee. The email or NRC may already exist.');
       } finally {
         setLoading(false);
       }
-  };
-
-
-  const handleModalClose = () => {
-    if (successResult) {
-        onEmployeeAdded(); 
-    }
-    onClose();
-  };
-
-  const handleCopyToClipboard = () => {
-    if (successResult) {
-        navigator.clipboard.writeText(successResult.password);
-        alert('Password copied to clipboard!');
-    }
   };
 
   const renderForm = () => (
@@ -210,36 +196,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
         </form>
   );
 
-  const renderSuccess = () => (
-      <div className="text-center p-4">
-          <svg className="w-16 h-16 mx-auto text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-xl font-bold text-white mt-4">Employee Created Successfully!</h3>
-          <p className="text-slate-400 mt-2">A user account has been created for <span className="font-semibold text-slate-200">{successResult?.email}</span>.</p>
-          <p className="text-slate-400 mt-1">Please provide them with the following temporary password and advise them to change it upon their first login.</p>
-          
-          <div className="my-6 p-4 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center space-x-4">
-              <span className="text-2xl font-mono tracking-widest text-emerald-400">{successResult?.password}</span>
-              <button onClick={handleCopyToClipboard} className="text-slate-400 hover:text-white" title="Copy to clipboard">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-              </button>
-          </div>
-      </div>
-  );
-  
   const Footer = () => {
-    if (successResult) {
-      return (
-        <button
-          type="button"
-          onClick={handleModalClose}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-        >
-          Done
-        </button>
-      );
-    }
     return (
       <>
         <button
@@ -264,14 +221,13 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleModalClose}
-      title={successResult ? 'Account Created' : 'Add New Employee'}
+      onClose={onClose}
+      title={'Add New Employee'}
       footer={<Footer />}
     >
-      {loading ? <LoadingSpinner text="Creating employee..." /> :
-       settings.loading ? <LoadingSpinner text="Loading form data..." /> : 
+      {settings.loading ? <LoadingSpinner text="Loading form data..." /> : 
        settings.error ? <p className="text-center text-red-400">{settings.error}</p> :
-       successResult ? renderSuccess() : renderForm()
+       renderForm()
       }
     </Modal>
   );

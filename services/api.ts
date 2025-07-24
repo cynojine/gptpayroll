@@ -1,9 +1,5 @@
 
 
-
-
-
-
 import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { Database, Employee, LeaveRequest, Profile, Department, JobTitle, ContractType, LeaveType, SettingsCategory, SettingsTableName, EmployeeFormData, UpdateEmployeeFormData, PayrollItem, EmployeePayrollItem, PayrollData, TaxBand, PayrollSetting, LeaveRequestFormData, PayrollBreakdown, Json, EmployeeDocument, PayeReturnRow, NapsaReturnRow, BrandingSettings, NhimaReturnRow, CompanyHoliday, LeaveBalance, PolicyDocument } from '../types';
@@ -18,18 +14,20 @@ const getCategoryItems = async <T extends SettingsCategory>(tableName: SettingsT
         console.error(`Error fetching ${tableName}:`, error.message);
         throw error;
     }
-    return (data as T[]) || [];
+    return (data as any as T[]) || [];
 }
 
 export const getDepartments = () => getCategoryItems<Department>('departments');
 export const createDepartment = async (name: string): Promise<Department> => {
-    const { data, error } = await supabase.from('departments').insert([{ name }]).select().single();
+    const payload: Database['public']['Tables']['departments']['Insert'] = { name };
+    const { data, error } = await supabase.from('departments').insert([payload]).select().single();
     if (error) throw error;
     if (!data) throw new Error("Department creation failed.");
     return data;
 };
 export const updateDepartment = async (id: string, name: string): Promise<Department> => {
-    const { data, error } = await supabase.from('departments').update({ name }).eq('id', id).select().single();
+    const payload: Database['public']['Tables']['departments']['Update'] = { name };
+    const { data, error } = await supabase.from('departments').update(payload).eq('id', id).select().single();
     if (error) throw error;
     if (!data) throw new Error("Department update failed.");
     return data;
@@ -41,13 +39,15 @@ export const deleteDepartment = async (id: string): Promise<void> => {
 
 export const getJobTitles = () => getCategoryItems<JobTitle>('job_titles');
 export const createJobTitle = async (name: string): Promise<JobTitle> => {
-    const { data, error } = await supabase.from('job_titles').insert([{ name }]).select().single();
+    const payload: Database['public']['Tables']['job_titles']['Insert'] = { name };
+    const { data, error } = await supabase.from('job_titles').insert([payload]).select().single();
     if (error) throw error;
     if (!data) throw new Error("Job Title creation failed.");
     return data;
 };
 export const updateJobTitle = async (id: string, name: string): Promise<JobTitle> => {
-    const { data, error } = await supabase.from('job_titles').update({ name }).eq('id', id).select().single();
+    const payload: Database['public']['Tables']['job_titles']['Update'] = { name };
+    const { data, error } = await supabase.from('job_titles').update(payload).eq('id', id).select().single();
     if (error) throw error;
     if (!data) throw new Error("Job Title update failed.");
     return data;
@@ -59,13 +59,15 @@ export const deleteJobTitle = async (id: string): Promise<void> => {
 
 export const getContractTypes = () => getCategoryItems<ContractType>('contract_types');
 export const createContractType = async (name: string): Promise<ContractType> => {
-    const { data, error } = await supabase.from('contract_types').insert([{ name }]).select().single();
+    const payload: Database['public']['Tables']['contract_types']['Insert'] = { name };
+    const { data, error } = await supabase.from('contract_types').insert([payload]).select().single();
     if (error) throw error;
     if (!data) throw new Error("Contract Type creation failed.");
     return data;
 };
 export const updateContractType = async (id: string, name: string): Promise<ContractType> => {
-    const { data, error } = await supabase.from('contract_types').update({ name }).eq('id', id).select().single();
+    const payload: Database['public']['Tables']['contract_types']['Update'] = { name };
+    const { data, error } = await supabase.from('contract_types').update(payload).eq('id', id).select().single();
     if (error) throw error;
     if (!data) throw new Error("Contract Type update failed.");
     return data;
@@ -77,13 +79,15 @@ export const deleteContractType = async (id: string): Promise<void> => {
 
 export const getLeaveTypes = () => getCategoryItems<LeaveType>('leave_types');
 export const createLeaveType = async (name: string): Promise<LeaveType> => {
-    const { data, error } = await supabase.from('leave_types').insert([{ name }]).select().single();
+    const payload: Database['public']['Tables']['leave_types']['Insert'] = { name };
+    const { data, error } = await supabase.from('leave_types').insert([payload]).select().single();
     if (error) throw error;
     if (!data) throw new Error("Leave Type creation failed.");
     return data;
 };
 export const updateLeaveType = async (id: string, name: string): Promise<LeaveType> => {
-    const { data, error } = await supabase.from('leave_types').update({ name }).eq('id', id).select().single();
+    const payload: Database['public']['Tables']['leave_types']['Update'] = { name };
+    const { data, error } = await supabase.from('leave_types').update(payload).eq('id', id).select().single();
     if (error) throw error;
     if (!data) throw new Error("Leave Type update failed.");
     return data;
@@ -95,15 +99,18 @@ export const deleteLeaveType = async (id: string): Promise<void> => {
 
 
 export const getProfileForUser = async (): Promise<Profile | null> => {
-    // v2 compatibility
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
     type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-    const response = await supabase.from('profiles').select('id, first_name, last_name, role').eq('id', user.id).single();
-    if (response.error && response.error.code !== 'PGRST116') { console.error('Error fetching profile:', response.error.message); return null; }
+    const response: PostgrestSingleResponse<ProfileRow> = await supabase.from('profiles').select('id, first_name, last_name, role').eq('id', user.id).single();
     
-    const profileData = response.data as ProfileRow | null;
+    if (response.error && response.error.code !== 'PGRST116') { 
+        console.error('Error fetching profile:', response.error.message); 
+        return null; 
+    }
+    
+    const profileData = response.data;
     if (!profileData) return null;
     
     return {
@@ -201,31 +208,67 @@ export const getEmployeeById = async (id: string): Promise<Employee> => {
     return mapEmployeeData(data);
 }
 
-export const createEmployee = async (formData: EmployeeFormData): Promise<{ employee: Employee; temporaryPassword: string; }> => {
-    const { email } = formData;
+export const createEmployee = async (formData: EmployeeFormData): Promise<Employee> => {
+    const newEmployeePayload: Database['public']['Tables']['employees']['Insert'] = {
+        profile_id: null, // Initially no login
+        full_name: formData.fullName,
+        nrc: formData.nrc,
+        tpin: formData.tpin,
+        napsa_number: formData.napsaNumber,
+        email: formData.email,
+        phone: formData.phone,
+        salary: formData.salary,
+        hire_date: formData.hireDate,
+        department_id: formData.departmentId,
+        job_title_id: formData.jobTitleId,
+        contract_type_id: formData.contractTypeId,
+        employee_number: formData.employeeNumber,
+        social_security_number: formData.socialSecurityNumber,
+        nhis_id: formData.nhisId,
+        grade: formData.grade,
+        pay_point: formData.payPoint,
+        bank_name: formData.bankName,
+        account_number: formData.accountNumber,
+        division: formData.division,
+    };
+
+    const { data: newEmployee, error: employeeError } = await supabase
+        .from('employees')
+        .insert([newEmployeePayload])
+        .select('id')
+        .single();
+
+    if (employeeError) {
+        console.error(`Failed to create employee record:`, employeeError);
+        throw new Error(`Failed to create employee record: ${employeeError.message}`);
+    }
+    if (!newEmployee) {
+        throw new Error("Failed to retrieve created employee record after insert.");
+    }
+    
+    return getEmployeeById(newEmployee.id);
+};
+
+export const createLoginForEmployee = async (employeeId: string, email: string): Promise<void> => {
     const temporaryPassword = Math.random().toString(36).slice(-16);
     
-    // v2 compatibility: Store admin session, create user, then restore admin session
     const { data: { session: adminSession } } = await supabase.auth.getSession();
     if (!adminSession) {
-        throw new Error("Admin user is not authenticated. Cannot create new employee.");
+        throw new Error("Admin user is not authenticated. Cannot create new employee login.");
     }
-
-    // Sign up the new user. This will change the current session.
+    
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: temporaryPassword,
     });
-    
-    // After signUp, immediately restore the admin's session regardless of the outcome
+
     const { error: setSessionError } = await supabase.auth.setSession({
         access_token: adminSession.access_token,
         refresh_token: adminSession.refresh_token,
     });
     
     if (setSessionError) {
-        // This is a critical failure. The admin is now logged out.
-        console.error("CRITICAL: Failed to restore admin session after creating a new user. The admin is now logged out.", setSessionError);
+        console.error("CRITICAL: Failed to restore admin session after creating a new user login. The admin is now logged out.", setSessionError);
         throw new Error("Failed to restore admin session. Please log in again.");
     }
 
@@ -238,70 +281,31 @@ export const createEmployee = async (formData: EmployeeFormData): Promise<{ empl
     
     const newUserId = signUpData.user.id;
     
-    // Now, as the admin user, create the profile and employee records.
     try {
-        const newProfile: Database['public']['Tables']['profiles']['Insert'] = {
-            id: newUserId,
-            role: 'employee',
-            first_name: formData.fullName.split(' ')[0],
-            last_name: formData.fullName.split(' ').slice(1).join(' ') || null
-        };
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([newProfile]);
-        
-        if (profileError) {
-            // NOTE: If this fails, we should delete the auth user we just created.
-            // This requires an admin client, which is best done in a server-side function.
-            // For now, we log a critical warning.
-            console.error(`CRITICAL: User ${email} was created in Auth but profile creation failed. Orphaned user exists.`, profileError);
-            throw new Error(`Failed to create profile: ${profileError.message}`);
-        }
-
-        const newEmployeePayload: Database['public']['Tables']['employees']['Insert'] = {
-            profile_id: newUserId,
-            full_name: formData.fullName,
-            nrc: formData.nrc,
-            tpin: formData.tpin,
-            napsa_number: formData.napsaNumber,
-            email: formData.email,
-            phone: formData.phone,
-            salary: formData.salary,
-            hire_date: formData.hireDate,
-            department_id: formData.departmentId,
-            job_title_id: formData.jobTitleId,
-            contract_type_id: formData.contractTypeId,
-            employee_number: formData.employeeNumber,
-            social_security_number: formData.socialSecurityNumber,
-            nhis_id: formData.nhisId,
-            grade: formData.grade,
-            pay_point: formData.payPoint,
-            bank_name: formData.bankName,
-            account_number: formData.accountNumber,
-            division: formData.division,
-        };
-
-        const { data: newEmployee, error: employeeError } = await supabase
+        const { error: linkError } = await supabase
             .from('employees')
-            .insert([newEmployeePayload])
-            .select('id')
-            .single();
+            .update({ profile_id: newUserId })
+            .eq('id', employeeId);
 
-        if (employeeError) {
-            console.error(`CRITICAL: User ${email} was created in Auth but employee record creation failed. Orphaned user exists.`, employeeError);
-            throw new Error(`Failed to create employee record: ${employeeError.message}`);
+        if (linkError) {
+            throw new Error(`Failed to link new login to employee record: ${linkError.message}`);
         }
-        if (!newEmployee) {
-            throw new Error("Failed to retrieve created employee record after insert.");
-        }
+
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/`,
+        });
         
-        const fullNewEmployee = await getEmployeeById(newEmployee.id);
-        return { employee: fullNewEmployee, temporaryPassword };
-
-    } catch (dbError: any) {
-        throw dbError;
+        if (resetError) {
+            console.warn(`User login created for ${email}, but failed to send password reset email.`, resetError);
+            throw new Error(`Login created, but failed to send reset email: ${resetError.message}`);
+        }
+    } catch(err) {
+        // TODO: Could attempt to delete the orphaned auth user here if we had admin privileges.
+        console.error(`CRITICAL: An error occurred after user ${email} was created in Auth. An orphaned user may exist.`, err);
+        throw err;
     }
 };
+
 
 export const updateEmployee = async (id: string, formData: UpdateEmployeeFormData): Promise<Employee> => {
     const employeeUpdate: Database['public']['Tables']['employees']['Update'] = {
@@ -335,7 +339,6 @@ export const updateEmployee = async (id: string, formData: UpdateEmployeeFormDat
       console.error('Error updating employee:', error.message);
       throw error;
     }
-    // Refetch the employee to get the fully joined data consistent with the Employee type
     return getEmployeeById(id);
 };
 
@@ -357,14 +360,12 @@ export const deleteEmployee = async (id: string): Promise<void> => {
 };
 
 export const resetEmployeePassword = async (email: string) => {
-    // v2 compatibility
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/`,
     });
     if (error) throw error;
 };
 
-// Payroll Item Management
 export const getPayrollItems = async (): Promise<PayrollItem[]> => {
     const { data, error } = await supabase
         .from('payroll_items')
@@ -394,7 +395,7 @@ export const createPayrollItem = async (item: Omit<PayrollItem, 'id'>): Promise<
     const { data, error } = await supabase.from('payroll_items').insert([payload]).select().single();
     if (error) throw error;
     if (!data) throw new Error("Payroll item creation failed.");
-    const row = data as Database['public']['Tables']['payroll_items']['Row'];
+    const row = data;
     return {
         id: row.id,
         name: row.name,
@@ -414,7 +415,7 @@ export const updatePayrollItem = async (id: string, item: Omit<PayrollItem, 'id'
     const { data, error } = await supabase.from('payroll_items').update(payload).eq('id', id).select().single();
     if (error) throw error;
     if (!data) throw new Error("Payroll item update failed.");
-    const row = data as Database['public']['Tables']['payroll_items']['Row'];
+    const row = data;
      return {
         id: row.id,
         name: row.name,
@@ -428,8 +429,6 @@ export const deletePayrollItem = async (id: string): Promise<void> => {
     if (error) throw error;
 }
 
-
-// Employee Payroll Item Management
 export const getEmployeePayrollItems = async (employeeId: string): Promise<EmployeePayrollItem[]> => {
     const { data, error } = await supabase
         .from('employee_payroll_items')
@@ -456,7 +455,6 @@ export const removeEmployeePayrollItem = async (id: string): Promise<void> => {
     if (error) throw error;
 }
 
-// Leave Management
 export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
     const { data, error } = await supabase
         .from('leave_requests')
@@ -477,41 +475,34 @@ export const getLeaveRequests = async (): Promise<LeaveRequest[]> => {
 };
 
 export const updateLeaveRequestStatus = async (request: LeaveRequest, status: 'Approved' | 'Rejected'): Promise<void> => {
-    // If approving, we need to debit the balance
     if (status === 'Approved') {
-        // Fetch the balance for the specific employee and leave type
-        const balanceResponse = await supabase.from('leave_balances').select('id, balance_days').eq('employee_id', request.employeeId).eq('leave_type_id', request.leaveTypeId).single();
+        const {data: balanceData, error: balanceError} = await supabase.from('leave_balances').select('id, balance_days').eq('employee_id', request.employeeId).eq('leave_type_id', request.leaveTypeId).single();
 
-        if (balanceResponse.error && balanceResponse.error.code !== 'PGRST116') throw new Error("Error fetching current leave balance.");
+        if (balanceError && balanceError.code !== 'PGRST116') throw new Error("Error fetching current leave balance.");
         
-        const currentBalance = balanceResponse.data?.balance_days || 0;
+        const currentBalance = balanceData?.balance_days || 0;
         const newBalance = currentBalance - request.days;
 
         if (newBalance < 0) {
             throw new Error("Approving this request would result in a negative leave balance.");
         }
 
-        const upsertPayload: Database['public']['Tables']['leave_balances']['Upsert'] = {
+        const upsertPayload: Database['public']['Tables']['leave_balances']['Insert'] = {
             employee_id: request.employeeId,
             leave_type_id: request.leaveTypeId,
             balance_days: newBalance,
         };
 
-        // Upsert the new balance. This will create a balance record if one doesn't exist.
         const { error: upsertError } = await supabase.from('leave_balances').upsert(upsertPayload, { onConflict: 'employee_id, leave_type_id' });
         
         if (upsertError) throw new Error("Failed to update leave balance.");
     }
     
-    // Note: This does not handle reverting an approved request back to pending and crediting the balance.
-    // That would require more complex logic, ideally in a database function.
-
-    // Finally, update the status of the leave request itself.
-    const { error } = await supabase.from('leave_requests').update({ status }).eq('id', request.id);
+    const payload: Database['public']['Tables']['leave_requests']['Update'] = { status };
+    const { error } = await supabase.from('leave_requests').update(payload).eq('id', request.id);
     if (error) throw error;
 };
 
-// Tax & Statutory Settings
 export const getTaxBands = async (): Promise<TaxBand[]> => {
     const { data, error } = await supabase.from('tax_bands').select('*');
     if (error) throw error;
@@ -523,7 +514,7 @@ export const getTaxBands = async (): Promise<TaxBand[]> => {
     }));
 }
 export const upsertTaxBands = async (bands: TaxBand[]) => {
-    const payload: Database['public']['Tables']['tax_bands']['Upsert'][] = bands.map(b => ({
+    const payload: Database['public']['Tables']['tax_bands']['Insert'][] = bands.map(b => ({
         id: b.id,
         band_order: b.bandOrder,
         chargeable_amount: b.chargeableAmount,
@@ -544,7 +535,7 @@ export const getPayrollSettings = async (): Promise<PayrollSetting[]> => {
 }
 
 export const upsertPayrollSettings = async (settings: PayrollSetting[]) => {
-    const payload: Database['public']['Tables']['payroll_settings']['Upsert'][] = settings.map(s => ({
+    const payload: Database['public']['Tables']['payroll_settings']['Insert'][] = settings.map(s => ({
         id: s.id,
         setting_key: s.settingKey,
         setting_value: s.settingValue,
@@ -553,61 +544,59 @@ export const upsertPayrollSettings = async (settings: PayrollSetting[]) => {
     if (error) throw error;
 }
 
-// Payroll Run
 export const savePayrollRun = async (month: number, year: number, data: PayrollData[], status: 'Draft' | 'Finalized') => {
     const { data: { user } } = await supabase.auth.getUser();
 
-    // More robustly check for an existing run, then update or insert.
-    const fetchResponse = await supabase
+    const { data: existingRun, error: fetchError } = await supabase
         .from('payroll_runs')
         .select('id')
         .eq('month', month)
         .eq('year', year)
         .single();
 
-    if (fetchResponse.error && fetchResponse.error.code !== 'PGRST116') {
-        throw new Error(`Failed to check for existing payroll run: ${fetchResponse.error.message}`);
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        throw new Error(`Failed to check for existing payroll run: ${fetchError.message}`);
     }
-    const existingRun = fetchResponse.data;
-
-
+    
     let runId: string;
-    const runPayload = {
-        month,
-        year,
-        status,
-        processed_by: user?.id || null,
-        run_date: new Date().toISOString()
-    };
 
     if (existingRun) {
-        // Update existing run
-        const updateResponse = await supabase
+        const runPayload: Database['public']['Tables']['payroll_runs']['Update'] = {
+            status,
+            processed_by: user?.id || null,
+            run_date: new Date().toISOString()
+        };
+        const { data: updatedRun, error: updateError } = await supabase
             .from('payroll_runs')
             .update(runPayload)
             .eq('id', existingRun.id)
-            .select()
+            .select('id')
             .single();
-        if (updateResponse.error) throw updateResponse.error;
-        if (!updateResponse.data) throw new Error("Failed to update payroll run.");
-        runId = updateResponse.data.id;
+        if (updateError) throw updateError;
+        if (!updatedRun) throw new Error("Failed to update payroll run.");
+        runId = updatedRun.id;
     } else {
-        // Insert new run
-        const insertResponse = await supabase
+        const runPayload: Database['public']['Tables']['payroll_runs']['Insert'] = {
+            month,
+            year,
+            status,
+            processed_by: user?.id || null,
+            run_date: new Date().toISOString()
+        };
+        const { data: insertedRun, error: insertError } = await supabase
             .from('payroll_runs')
-            .insert([runPayload])
-            .select()
+            .insert(runPayload)
+            .select('id')
             .single();
-        if (insertResponse.error) throw insertResponse.error;
-        if (!insertResponse.data) throw new Error("Failed to create payroll run.");
-        runId = insertResponse.data.id;
+        if (insertError) throw insertError;
+        if (!insertedRun) throw new Error("Failed to create payroll run.");
+        runId = insertedRun.id;
     }
     
-    // Delete old details for this run to prevent duplicates and re-insert
     await supabase.from('payroll_details').delete().eq('payroll_run_id', runId);
     
     if (data.length > 0) {
-        const detailsPayload = data.map(d => ({
+        const detailsPayload: Database['public']['Tables']['payroll_details']['Insert'][] = data.map(d => ({
             payroll_run_id: runId,
             employee_id: d.employeeId,
             basic_salary: d.basicSalary,
@@ -626,11 +615,9 @@ export const savePayrollRun = async (month: number, year: number, data: PayrollD
 };
 
 export const getPayrollRun = async (month: number, year: number): Promise<{ payrollData: PayrollData[], status: string } | null> => {
-    const runResponse = await supabase.from('payroll_runs').select('id, status').eq('month', month).eq('year', year).single();
-    if (runResponse.error && runResponse.error.code !== 'PGRST116') throw runResponse.error;
-    if (!runResponse.data) return null;
-    const run = runResponse.data;
-
+    const { data: run, error: runError } = await supabase.from('payroll_runs').select('id, status').eq('month', month).eq('year', year).single();
+    if (runError && runError.code !== 'PGRST116') throw runError;
+    if (!run) return null;
 
     const { data: details, error: detailsError } = await supabase
         .from('payroll_details')
@@ -678,7 +665,7 @@ export const getFinalizedPayrollDetailsForYear = async (employeeId: string, year
         }[];
     }
 
-    return (data as FinalizedRun[]).flatMap(run => 
+    return (data as any as FinalizedRun[]).flatMap(run => 
         run.payroll_details.map(detail => ({
             month: run.month,
             ...detail
@@ -686,10 +673,8 @@ export const getFinalizedPayrollDetailsForYear = async (employeeId: string, year
     );
 };
 
-
-// Reports
 export const getPayeReturnReportData = async (month: number, year: number): Promise<PayeReturnRow[]> => {
-    const response = await supabase
+    const { data, error } = await supabase
         .from('payroll_runs')
         .select(`id, payroll_details!inner(id, gross_pay, paye, employees!inner(full_name, nrc, tpin))`)
         .eq('month', month)
@@ -697,10 +682,10 @@ export const getPayeReturnReportData = async (month: number, year: number): Prom
         .eq('status', 'Finalized')
         .single();
     
-    if (response.error) throw response.error;
-    if (!response.data) return [];
+    if (error) throw error;
+    if (!data) return [];
 
-    const details = (response.data as any).payroll_details;
+    const details = (data as any).payroll_details;
     
     return details.map((d: any) => ({
         id: d.id,
@@ -713,7 +698,7 @@ export const getPayeReturnReportData = async (month: number, year: number): Prom
 };
 
 export const getNapsaReturnReportData = async (month: number, year: number): Promise<NapsaReturnRow[]> => {
-    const response = await supabase
+    const { data, error } = await supabase
         .from('payroll_runs')
         .select(`id, payroll_details!inner(id, basic_salary, napsa, employees!inner(full_name, nrc, napsa_number))`)
         .eq('month', month)
@@ -721,10 +706,10 @@ export const getNapsaReturnReportData = async (month: number, year: number): Pro
         .eq('status', 'Finalized')
         .single();
 
-    if (response.error) throw response.error;
-    if (!response.data) return [];
+    if (error) throw error;
+    if (!data) return [];
     
-    const details = (response.data as any).payroll_details;
+    const details = (data as any).payroll_details;
 
     return details.map((d: any) => ({
         id: d.id,
@@ -737,7 +722,7 @@ export const getNapsaReturnReportData = async (month: number, year: number): Pro
 };
 
 export const getNhimaReturnReportData = async (month: number, year: number): Promise<NhimaReturnRow[]> => {
-    const response = await supabase
+    const { data, error } = await supabase
         .from('payroll_runs')
         .select(`id, payroll_details!inner(id, nhima, employees!inner(full_name, nrc, nhis_id))`)
         .eq('month', month)
@@ -745,10 +730,10 @@ export const getNhimaReturnReportData = async (month: number, year: number): Pro
         .eq('status', 'Finalized')
         .single();
 
-    if (response.error) throw response.error;
-    if (!response.data) return [];
+    if (error) throw error;
+    if (!data) return [];
     
-    const details = (response.data as any).payroll_details;
+    const details = (data as any).payroll_details;
 
     return details.map((d: any) => ({
         id: d.id,
@@ -759,10 +744,7 @@ export const getNhimaReturnReportData = async (month: number, year: number): Pro
     }));
 };
 
-
-// ESS Functions
 export const getEmployeeDataForUser = async (): Promise<Employee | null> => {
-    // v2 compatibility
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase.from('employees').select('*, job_titles(name), departments(name), contract_types(name)').eq('profile_id', user.id).single();
@@ -773,7 +755,6 @@ export const getEmployeeDataForUser = async (): Promise<Employee | null> => {
     return mapEmployeeData(data);
 };
 export const getMyLeaveRequests = async (): Promise<LeaveRequest[]> => {
-    // v2 compatibility
     const employee = await getEmployeeDataForUser();
     if (!employee) return [];
 
@@ -830,7 +811,6 @@ export const getMyPayslips = async (): Promise<(PayrollData & { period: string }
     }));
 };
 
-// Document Management
 export const listEmployeeDocuments = async (employeeId: string): Promise<EmployeeDocument[]> => {
     const { data, error } = await supabase.from('employee_documents').select('*').eq('employee_id', employeeId).order('uploaded_at', {ascending: false});
     if(error) throw error;
@@ -859,7 +839,7 @@ export const uploadEmployeeDocument = async(employeeId: string, file: File) => {
     if(dbError) throw dbError;
 }
 export const getEmployeeDocumentDownloadUrl = async (filePath: string): Promise<string> => {
-    const { data, error } = await supabase.storage.from('employee-documents').createSignedUrl(filePath, 60); // URL valid for 60 seconds
+    const { data, error } = await supabase.storage.from('employee-documents').createSignedUrl(filePath, 60);
     if(error) throw error;
     return data.signedUrl;
 }
@@ -870,13 +850,10 @@ export const deleteEmployeeDocument = async (doc: EmployeeDocument) => {
     if(dbError) throw dbError;
 }
 
-// Branding
 export const getBrandingSettings = async (): Promise<BrandingSettings> => {
-    const response = await supabase.from('branding_settings').select('*').eq('id', 1).single();
+    const { data: settings, error } = await supabase.from('branding_settings').select('*').eq('id', 1).single();
 
-    // Handle case where no settings row exists (e.g., fresh install)
-    if (response.error && response.error.code === 'PGRST116') {
-        // Return default values if no settings are configured yet.
+    if (error && error.code === 'PGRST116') {
         return {
             id: 1,
             companyName: 'GPTPayroll',
@@ -885,12 +862,11 @@ export const getBrandingSettings = async (): Promise<BrandingSettings> => {
         };
     }
 
-    if (response.error) {
-        console.error('Error fetching branding settings:', response.error);
-        throw response.error;
+    if (error) {
+        console.error('Error fetching branding settings:', error);
+        throw error;
     }
     
-    const settings = response.data;
     if (!settings) {
          return { id: 1, companyName: 'GPTPayroll', companyAddress: null, logoUrl: null };
     }
@@ -919,7 +895,6 @@ export const uploadLogo = async (file: File): Promise<string> => {
     return data.publicUrl;
 }
 
-// Holidays
 export const getCompanyHolidays = async (year: number): Promise<CompanyHoliday[]> => {
     const { data, error } = await supabase.from('company_holidays').select('*').gte('holiday_date', `${year}-01-01`).lte('holiday_date', `${year}-12-31`).order('holiday_date');
     if(error) throw error;
@@ -939,7 +914,6 @@ export const deleteCompanyHoliday = async (id: string) => {
     if(error) throw error;
 }
 
-// Leave Balances
 export const getLeaveBalances = async (employeeId: string): Promise<LeaveBalance[]> => {
     const { data, error } = await supabase.from('leave_balances').select('*, leave_types(name)').eq('employee_id', employeeId);
     if(error) throw error;
@@ -957,7 +931,7 @@ export const getMyLeaveBalances = async(): Promise<LeaveBalance[]> => {
     return getLeaveBalances(employee.id);
 }
 export const adjustLeaveBalance = async (employeeId: string, leaveTypeId: string, newBalance: number) => {
-    const payload: Database['public']['Tables']['leave_balances']['Upsert'] = {
+    const payload: Database['public']['Tables']['leave_balances']['Insert'] = {
         employee_id: employeeId,
         leave_type_id: leaveTypeId,
         balance_days: newBalance
@@ -966,7 +940,6 @@ export const adjustLeaveBalance = async (employeeId: string, leaveTypeId: string
     if(error) throw error;
 }
 
-// Policy Documents
 export const listPolicyDocuments = async (): Promise<PolicyDocument[]> => {
     const { data, error } = await supabase.from('policy_documents').select('*').order('uploaded_at', { ascending: false });
     if (error) throw error;
@@ -1005,7 +978,6 @@ export const deletePolicyDocument = async (doc: PolicyDocument) => {
 };
 
 export const getPoliciesAsText = async (): Promise<string> => {
-    type PolicyPath = { file_path: string };
     const { data: documentsData, error: listError } = await supabase.from('policy_documents').select('file_path');
     if (listError) throw listError;
     if (!documentsData || documentsData.length === 0) return "No policy documents have been uploaded.";

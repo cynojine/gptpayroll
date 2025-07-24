@@ -17,6 +17,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isResettingPassword, setIsResettingPassword] = React.useState(false);
+  const [isCreatingLogin, setIsCreatingLogin] = React.useState(false);
   
   const [settings, setSettings] = React.useState<{
     departments: Department[];
@@ -96,8 +97,27 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
       };
       fetchSettings();
       setIsResettingPassword(false);
+      setIsCreatingLogin(false);
     }
   }, [isOpen, employee]);
+  
+  const handleCreateLogin = async () => {
+    if (!employee || !employee.email) {
+        addToast('Employee email is missing. Cannot create login.', 'error');
+        return;
+    }
+    setIsCreatingLogin(true);
+    try {
+        await api.createLoginForEmployee(employee.id, employee.email);
+        addToast(`Login created for ${employee.email}. An invitation to set their password has been sent.`, 'success');
+        onEmployeeUpdated(); // This refreshes the whole component
+    } catch (err: any) {
+        addToast(err.message || 'Failed to create login.', 'error');
+        console.error(err);
+    } finally {
+        setIsCreatingLogin(false);
+    }
+  };
 
   const handleSendResetLink = async () => {
     if (!employee || !employee.email) {
@@ -228,8 +248,18 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
   const securityContent = () => {
     if (!employee.profileId) {
       return (
-        <div className="p-4 bg-slate-900/50 rounded-lg text-center text-slate-400">
-          This employee does not have a login account.
+        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+           <p className="text-sm text-slate-400 max-w-md">
+               This employee does not have a login account. Click here to create one and send an email invitation for them to set their password.
+           </p>
+            <button 
+                type="button"
+                onClick={handleCreateLogin}
+                disabled={isCreatingLogin}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-slate-500 whitespace-nowrap"
+            >
+                {isCreatingLogin ? 'Creating...' : 'Create Login Account'}
+            </button>
         </div>
       );
     }

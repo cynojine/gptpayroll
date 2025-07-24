@@ -279,7 +279,7 @@ export interface Database {
   public: {
     Tables: {
       branding_settings: {
-        Row: { id: number; company_name: string | null; company_address: string | null; logo_url: string | null; created_at: string | null; };
+        Row: { id: number; company_name: string; company_address: string; logo_url: string; created_at: string; };
         Insert: { id?: number; company_name?: string | null; company_address?: string | null; logo_url?: string | null; created_at?: string | null; };
         Update: { id?: number; company_name?: string | null; company_address?: string | null; logo_url?: string | null; created_at?: string | null; };
         Relationships: [];
@@ -322,7 +322,7 @@ export interface Database {
       },
       payroll_items: {
         Row: { id: string; name: string; type: 'Addition' | 'Deduction'; calculation_type: 'Fixed' | 'Percentage'; is_taxable: boolean; };
-        Insert: { id?: string; name: string; type?: 'Addition' | 'Deduction'; calculation_type?: 'Fixed' | 'Percentage'; is_taxable?: boolean; };
+        Insert: { id?: string; name: string; type: 'Addition' | 'Deduction'; calculation_type: 'Fixed' | 'Percentage'; is_taxable: boolean; };
         Update: { id?: string; name?: string; type?: 'Addition' | 'Deduction'; calculation_type?: 'Fixed' | 'Percentage'; is_taxable?: boolean; };
         Relationships: [];
       },
@@ -352,7 +352,7 @@ export interface Database {
       },
       payroll_runs: {
         Row: { id: string; run_date: string; month: number; year: number; status: string; processed_by: string | null; created_at: string };
-        Insert: { id?: string; run_date?: string; month: number; year: number; status?: string; processed_by?: string | null; created_at?: string };
+        Insert: { id?: string; run_date: string; month: number; year: number; status: string; processed_by?: string | null; created_at?: string };
         Update: { id?: string; run_date?: string; month?: number; year?: number; status?: string; processed_by?: string | null; created_at?: string };
         Relationships: [];
       },
@@ -382,7 +382,7 @@ export interface Database {
       },
       leave_balances: {
         Row: { id: string; employee_id: string; leave_type_id: string; balance_days: number; };
-        Insert: { id?: string; employee_id: string; leave_type_id: string; balance_days?: number; };
+        Insert: { id?: string; employee_id: string; leave_type_id: string; balance_days: number; };
         Update: { id?: string; employee_id?: string; leave_type_id?: string; balance_days?: number; };
         Relationships: [];
       }
