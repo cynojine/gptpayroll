@@ -1,6 +1,18 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { BrandingSettings } from '../../types';
+
+const BrandHeader: React.FC<{ branding: BrandingSettings | null }> = ({ branding }) => (
+    <div className="inline-block mb-4 h-16 flex items-center justify-center">
+      {branding?.logoUrl ? (
+        <img src={branding.logoUrl} alt={`${branding.companyName || 'Company'} Logo`} className="max-h-16 object-contain" />
+      ) : (
+        <span className="font-bold text-2xl text-slate-100">{branding?.companyName || 'GPTPayroll'}</span>
+      )}
+    </div>
+  );
 
 export const Auth: React.FC = () => {
   const { branding } = useAuth();
@@ -41,21 +53,11 @@ export const Auth: React.FC = () => {
     }
   };
 
-  const BrandHeader: React.FC = () => (
-    <div className="inline-block mb-4 h-16 flex items-center justify-center">
-      {branding?.logoUrl ? (
-        <img src={branding.logoUrl} alt={`${branding.companyName || 'Company'} Logo`} className="max-h-16 object-contain" />
-      ) : (
-        <span className="font-bold text-2xl text-slate-100">{branding?.companyName || 'GPTPayroll'}</span>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-900">
       <div className="w-full max-w-md p-8 space-y-8 bg-slate-800 rounded-2xl shadow-2xl">
         <div className="text-center">
-          <BrandHeader />
+          <BrandHeader branding={branding} />
           <h2 className="text-3xl font-extrabold text-white">
             {isLoginView ? 'Sign in to your account' : 'Create a new account'}
           </h2>

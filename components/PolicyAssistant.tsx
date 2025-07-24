@@ -10,6 +10,33 @@ import { LoadingSpinner } from './common/LoadingSpinner';
 
 type AssistantTab = 'ask' | 'sql';
 
+const ChatBubble: React.FC<{ message: ChatMessage; isSqlMode: boolean; }> = ({ message, isSqlMode }) => {
+    const isUser = message.role === ChatRole.USER;
+    const isModel = message.role === ChatRole.MODEL;
+    const bubbleStyles = isUser ? 'bg-blue-600 self-end' : 'bg-slate-700 self-start';
+    const containerStyles = isUser ? 'justify-end' : 'justify-start';
+
+    if (message.role === ChatRole.ERROR) {
+        return <div className="text-red-400 text-center py-2">{message.text}</div>;
+    }
+
+    const cleanedText = isSqlMode ? message.text.replace(/^```sql\n|```$/g, '') : message.text;
+
+    return (
+        <div className={`flex w-full ${containerStyles}`}>
+            <div className={`max-w-xl lg:max-w-3xl px-4 py-3 rounded-lg shadow-md ${bubbleStyles}`}>
+                {isModel && isSqlMode ? (
+                    <pre className="whitespace-pre-wrap break-words">
+                        <code className="text-sm font-mono text-emerald-300">{cleanedText}</code>
+                    </pre>
+                ) : (
+                    <p className="whitespace-pre-wrap">{cleanedText}</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export const PolicyAssistant: React.FC = () => {
     const { profile } = useAuth();
     const [activeTab, setActiveTab] = useState<AssistantTab>('ask');
@@ -100,33 +127,6 @@ export const PolicyAssistant: React.FC = () => {
             setIsLoading(false);
         }
     };
-
-    const ChatBubble: React.FC<{ message: ChatMessage }> = ({ message }) => {
-        const isUser = message.role === ChatRole.USER;
-        const isModel = message.role === ChatRole.MODEL;
-        const bubbleStyles = isUser ? 'bg-blue-600 self-end' : 'bg-slate-700 self-start';
-        const containerStyles = isUser ? 'justify-end' : 'justify-start';
-
-        if (message.role === ChatRole.ERROR) {
-            return <div className="text-red-400 text-center py-2">{message.text}</div>;
-        }
-
-        const cleanedText = isSqlMode ? message.text.replace(/^```sql\n|```$/g, '') : message.text;
-
-        return (
-            <div className={`flex w-full ${containerStyles}`}>
-                <div className={`max-w-xl lg:max-w-3xl px-4 py-3 rounded-lg shadow-md ${bubbleStyles}`}>
-                    {isModel && isSqlMode ? (
-                        <pre className="whitespace-pre-wrap break-words">
-                            <code className="text-sm font-mono text-emerald-300">{cleanedText}</code>
-                        </pre>
-                    ) : (
-                        <p className="whitespace-pre-wrap">{cleanedText}</p>
-                    )}
-                </div>
-            </div>
-        );
-    };
     
     const [error, setError] = useState<string|null>(null);
 
@@ -144,7 +144,7 @@ export const PolicyAssistant: React.FC = () => {
                         </div>
                     )}
                     {history.map((msg, index) => (
-                        <ChatBubble key={index} message={msg} />
+                        <ChatBubble key={index} message={msg} isSqlMode={isSqlMode} />
                     ))}
                     {isLoading && history[history.length - 1]?.role !== ChatRole.MODEL && (
                         <div className="flex justify-start">
