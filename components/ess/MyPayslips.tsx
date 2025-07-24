@@ -1,7 +1,4 @@
-
-
-
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { getMyPayslips, getEmployeeDataForUser, getFinalizedPayrollDetailsForYear, getBrandingSettings, getMyLeaveBalances } from '../../services/api';
@@ -11,14 +8,14 @@ import { PayrollIcon } from '../icons/IconComponents';
 import { useToast } from '../../contexts/ToastContext';
 
 export const MyPayslips: React.FC = () => {
-    const [payslips, setPayslips] = useState<(PayrollData & { period: string })[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedPayslipData, setSelectedPayslipData] = useState<PayslipDisplayData | null>(null);
-    const [isModalLoading, setIsModalLoading] = useState(false);
+    const [payslips, setPayslips] = React.useState<(PayrollData & { period: string })[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [selectedPayslipData, setSelectedPayslipData] = React.useState<PayslipDisplayData | null>(null);
+    const [isModalLoading, setIsModalLoading] = React.useState(false);
     const { addToast } = useToast();
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);

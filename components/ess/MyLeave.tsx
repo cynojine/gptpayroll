@@ -1,30 +1,30 @@
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { LeaveRequest, LeaveType, LeaveRequestFormData, LeaveBalance, CompanyHoliday } from '../../types';
 import * as api from '../../services/api';
 import { Table, Column } from '../common/Table';
 import { calculateBusinessDays } from '../../services/leaveCalculations';
+import { useToast } from '../../contexts/ToastContext';
 
 export const MyLeave: React.FC = () => {
-    const [history, setHistory] = useState<LeaveRequest[]>([]);
-    const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-    const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
-    const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { addToast } = useToast();
+    const [history, setHistory] = React.useState<LeaveRequest[]>([]);
+    const [leaveTypes, setLeaveTypes] = React.useState<LeaveType[]>([]);
+    const [leaveBalances, setLeaveBalances] = React.useState<LeaveBalance[]>([]);
+    const [holidays, setHolidays] = React.useState<CompanyHoliday[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = React.useState({
         leaveTypeId: '',
         startDate: '',
         endDate: '',
     });
-    const [calculatedDays, setCalculatedDays] = useState(0);
+    const [calculatedDays, setCalculatedDays] = React.useState(0);
     
-    const loadData = useCallback(async () => {
+    const loadData = React.useCallback(async () => {
         try {
             setLoading(true);
             const currentYear = new Date().getFullYear();
@@ -47,16 +47,17 @@ export const MyLeave: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadData();
     }, [loadData]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const days = calculateBusinessDays(formData.startDate, formData.endDate, holidays);
         setCalculatedDays(days);
     }, [formData.startDate, formData.endDate, holidays]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        setError(null); // Clear error on change
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -82,11 +83,14 @@ export const MyLeave: React.FC = () => {
                 days: calculatedDays,
             };
             await api.createLeaveRequest(submissionData);
+            addToast('Leave request submitted successfully!', 'success');
             setFormData({ leaveTypeId: '', startDate: '', endDate: '' });
             await loadData(); // Refresh history
         } catch (err) {
             console.error(err);
-            setError("An error occurred while submitting your request.");
+            const errorMessage = (err as Error).message || "An error occurred while submitting your request.";
+            setError(errorMessage);
+            addToast(errorMessage, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -113,8 +117,8 @@ export const MyLeave: React.FC = () => {
         <div className="space-y-6">
             <Card>
                 <h2 className="text-2xl font-bold text-white mb-4">Apply for Leave</h2>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div className="lg:col-span-2">
                         <label htmlFor="leaveTypeId" className="block text-sm font-medium">Leave Type</label>
                         <select id="leaveTypeId" name="leaveTypeId" value={formData.leaveTypeId} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
                             <option value="" disabled>Select a type...</option>
@@ -128,30 +132,24 @@ export const MyLeave: React.FC = () => {
                     </div>
                     <div>
                         <label htmlFor="startDate" className="block text-sm font-medium">Start Date</label>
-                        <input type="date" id="startDate" name="startDate" value={formData.startDate} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500" />
+                        <input type="date" name="startDate" id="startDate" value={formData.startDate} min={new Date().toISOString().split('T')[0]} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
+                    </div>
+                     <div>
+                        <label htmlFor="endDate" className="block text-sm font-medium">End Date</label>
+                        <input type="date" name="endDate" id="endDate" value={formData.endDate} min={formData.startDate || new Date().toISOString().split('T')[0]} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
                     </div>
                     <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium">End Date</label>
-                        <input type="date" id="endDate" name="endDate" value={formData.endDate} onChange={handleChange} required className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500" />
-                    </div>
-                    <div className="flex flex-col items-start space-y-2">
-                        <p className="text-sm text-slate-400">Calculated Days: <span className="font-bold text-lg text-white">{calculatedDays}</span></p>
-                        <button type="submit" disabled={isSubmitting || calculatedDays <= 0} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-500 disabled:cursor-not-allowed">
-                            {isSubmitting ? 'Submitting...' : 'Submit Request'}
+                        <button type="submit" disabled={isSubmitting || loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-500">
+                            {isSubmitting ? 'Submitting...' : `Submit (${calculatedDays} Days)`}
                         </button>
                     </div>
                 </form>
-                {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
+                {error && <p className="text-red-400 mt-3 text-center">{error}</p>}
             </Card>
+
             <Card>
-                <h2 className="text-2xl font-bold text-white mb-6">Your Leave History</h2>
-                {loading ? (
-                    <LoadingSpinner />
-                ) : history.length === 0 ? (
-                    <p className="text-center text-slate-400 py-8">You have no leave history.</p>
-                ) : (
-                    <Table columns={columns} data={history} />
-                )}
+                <h3 className="text-xl font-bold text-white mb-4">Your Leave History</h3>
+                {loading ? <LoadingSpinner /> : <Table columns={columns} data={history} />}
             </Card>
         </div>
     );

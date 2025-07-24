@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Modal } from '../common/Modal';
 import { PayslipDisplayData } from '../../types';
 import { jsPDF } from 'jspdf';
@@ -25,7 +23,7 @@ const PayslipField: React.FC<{ label: string; value: string | number | null | un
 );
 
 export const PayslipModal: React.FC<PayslipModalProps> = ({ isOpen, onClose, data }) => {
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const { employee, period, branding, currency, monthlyData, ytdData, leaveData } = data;
   const { breakdown, netPay } = monthlyData;
 

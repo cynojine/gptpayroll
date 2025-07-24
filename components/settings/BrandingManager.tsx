@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+
+import * as React from 'react';
 import { BrandingSettings } from '../../types';
 import * as api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -7,14 +8,14 @@ import { LoadingSpinner } from '../common/LoadingSpinner';
 
 export const BrandingManager: React.FC = () => {
     const { addToast } = useToast();
-    const [settings, setSettings] = useState<BrandingSettings | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [logoFile, setLogoFile] = useState<File | null>(null);
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [settings, setSettings] = React.useState<BrandingSettings | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const [logoFile, setLogoFile] = React.useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
 
-    const loadSettings = useCallback(async () => {
+    const loadSettings = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.getBrandingSettings();
@@ -28,7 +29,7 @@ export const BrandingManager: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadSettings();
     }, [loadSettings]);
 

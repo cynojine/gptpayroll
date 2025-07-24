@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { Table } from './common/Table';
 import { Employee } from '../types';
@@ -10,13 +8,13 @@ import { AddEmployeeModal } from './employees/AddEmployeeModal';
 import { EmployeeDetail } from './employees/EmployeeDetail';
 
 export const EmployeeList: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
 
-  const fetchEmployees = useCallback(async () => {
+  const fetchEmployees = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await getEmployees();
@@ -30,7 +28,7 @@ export const EmployeeList: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
   

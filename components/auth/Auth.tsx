@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { BrandingSettings } from '../../types';
@@ -16,26 +15,29 @@ const BrandHeader: React.FC<{ branding: BrandingSettings | null }> = ({ branding
 
 export const Auth: React.FC = () => {
   const { branding } = useAuth();
-  const [isLoginView, setIsLoginView] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [isLoginView, setIsLoginView] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [message, setMessage] = React.useState<string | null>(null);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
-  const handleAuthAction = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
       if (isLoginView) {
-        // v2 compatibility
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        setMessage('Login successful! Redirecting...');
+        // onAuthStateChange will handle redirect
       } else {
-        // v2 compatibility
         const { error } = await supabase.auth.signUp({ 
             email, 
             password,
@@ -51,7 +53,7 @@ export const Auth: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-900">
@@ -68,8 +70,7 @@ export const Auth: React.FC = () => {
                 setIsLoginView(!isLoginView);
                 setError(null);
                 setMessage(null);
-                setEmail('');
-                setPassword('');
+                formRef.current?.reset();
               }}
               className="font-medium text-emerald-500 hover:text-emerald-400"
             >
@@ -77,7 +78,7 @@ export const Auth: React.FC = () => {
             </button>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleAuthAction}>
+        <form ref={formRef} onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="rounded-md shadow-sm">
             <div>
               <label htmlFor="email-address" className="sr-only">Email address</label>
@@ -89,8 +90,6 @@ export const Auth: React.FC = () => {
                 required
                 className="appearance-none relative block w-full px-3 py-3 border border-slate-600 bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm rounded-t-md"
                 placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -104,19 +103,17 @@ export const Auth: React.FC = () => {
                 minLength={6}
                 className="appearance-none relative block w-full px-3 py-3 border border-slate-600 bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm rounded-b-md"
                 placeholder="Password (min. 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
 
           {error && <p className="text-sm text-center text-red-400 px-2">{error}</p>}
-          {message && <p className="text-sm text-center text-green-400 px-2">{message}</p>}
+          {message && !error && <p className="text-sm text-center text-green-400 px-2">{message}</p>}
 
           <div>
             <button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-emerald-500 disabled:bg-slate-600 disabled:cursor-not-allowed"
             >
               {loading ? 'Processing...' : (isLoginView ? 'Sign In' : 'Sign Up')}

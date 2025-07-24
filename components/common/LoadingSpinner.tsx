@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 
 export const LoadingSpinner: React.FC<{ text?: string }> = ({ text = 'Loading...' }) => (
   <div className="flex items-center justify-center h-full w-full p-8 text-slate-300 text-lg">

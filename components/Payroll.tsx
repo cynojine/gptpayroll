@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { Table, Column } from './common/Table';
 import { getEmployees, getPayrollRun, savePayrollRun, getTaxBands, getPayrollSettings, getFinalizedPayrollDetailsForYear, getBrandingSettings, getLeaveBalances } from '../services/api';
@@ -12,21 +10,20 @@ import { useToast } from '../contexts/ToastContext';
 
 export const Payroll: React.FC = () => {
   const { addToast } = useToast();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPayslipData, setSelectedPayslipData] = useState<PayslipDisplayData | null>(null);
-  const [runStatus, setRunStatus] = useState<'Draft' | 'Finalized'>('Draft');
-  const [payrollSettings, setPayrollSettings] = useState<PayrollCalculationSettings | null>(null);
-  const payrollWorker = useRef<Worker | null>(null);
+  const [employees, setEmployees] = React.useState<Employee[]>([]);
+  const [payrollData, setPayrollData] = React.useState<PayrollData[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [selectedPayslipData, setSelectedPayslipData] = React.useState<PayslipDisplayData | null>(null);
+  const [runStatus, setRunStatus] = React.useState<'Draft' | 'Finalized'>('Draft');
+  const [payrollSettings, setPayrollSettings] = React.useState<PayrollCalculationSettings | null>(null);
 
   const currentDate = new Date();
-  const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [year, setYear] = useState(currentDate.getFullYear());
+  const [month, setMonth] = React.useState(currentDate.getMonth() + 1);
+  const [year, setYear] = React.useState(currentDate.getFullYear());
 
-  const fetchPayrollPrerequisites = useCallback(async () => {
+  const fetchPayrollPrerequisites = React.useCallback(async () => {
     try {
         const [taxBands, settings, emps] = await Promise.all([
             getTaxBands(),
@@ -35,14 +32,18 @@ export const Payroll: React.FC = () => {
         ]);
         setEmployees(emps);
 
-        const settingsMap = settings.reduce((acc, s) => ({...acc, [s.settingKey]: parseFloat(s.settingValue)}), {} as Record<string, number>);
+        const settingsMap = settings.reduce((acc, s) => {
+            const parsedValue = parseFloat(s.settingValue);
+            acc[s.settingKey] = isNaN(parsedValue) ? 0 : parsedValue;
+            return acc;
+        }, {} as Record<string, number>);
 
         setPayrollSettings({
             taxBands,
-            napsaRate: settingsMap.napsa_rate,
-            napsaCeiling: settingsMap.napsa_ceiling,
-            nhimaRate: settingsMap.nhima_rate,
-            nhimaMaxContribution: settingsMap.nhima_max_contribution
+            napsaRate: settingsMap.napsa_rate || 0,
+            napsaCeiling: settingsMap.napsa_ceiling || 0,
+            nhimaRate: settingsMap.nhima_rate || 0,
+            nhimaMaxContribution: settingsMap.nhima_max_contribution || 0
         });
 
     } catch (err) {
@@ -51,14 +52,9 @@ export const Payroll: React.FC = () => {
     }
   }, []);
 
-  const fetchAndProcessPayroll = useCallback(async () => {
+  const fetchAndProcessPayroll = React.useCallback(async () => {
     if (!payrollSettings || employees.length === 0) return;
     
-    // Terminate any existing worker before starting a new job
-    if (payrollWorker.current) {
-        payrollWorker.current.terminate();
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -70,26 +66,14 @@ export const Payroll: React.FC = () => {
         setRunStatus(existingRun.status as 'Draft' | 'Finalized');
         setLoading(false);
       } else {
-        // No existing run, calculate using the web worker
+        // No existing run, calculate directly on the main thread
         setRunStatus('Draft');
-        payrollWorker.current = new Worker(new URL('../services/payroll.worker.ts', import.meta.url), { type: 'module' });
-        
-        payrollWorker.current.onmessage = (e: MessageEvent<{ type: 'SUCCESS' | 'ERROR', payload: any }>) => {
-            if (e.data.type === 'SUCCESS') {
-                setPayrollData(e.data.payload);
-            } else {
-                setError(`Payroll calculation failed: ${e.data.payload}`);
-            }
-            setLoading(false);
-        };
-
-        payrollWorker.current.onerror = (e) => {
-            console.error('Payroll Worker Error:', e);
-            setError('A critical error occurred during payroll calculation.');
-            setLoading(false);
-        };
-
-        payrollWorker.current.postMessage({ employees, payrollSettings });
+        const activeEmployees = employees.filter(emp => emp.status === 'Active');
+        const processedData = activeEmployees.map(emp => 
+          calculatePayrollForEmployee(emp, payrollSettings)
+        );
+        setPayrollData(processedData);
+        setLoading(false);
       }
 
     } catch (err) {
@@ -99,24 +83,15 @@ export const Payroll: React.FC = () => {
     }
   }, [month, year, payrollSettings, employees]);
   
-  useEffect(() => {
+  React.useEffect(() => {
     fetchPayrollPrerequisites();
   }, [fetchPayrollPrerequisites]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (payrollSettings && employees.length > 0) {
         fetchAndProcessPayroll();
     }
   }, [fetchAndProcessPayroll, payrollSettings, employees]);
-
-  // Cleanup worker on component unmount
-  useEffect(() => {
-    return () => {
-        if (payrollWorker.current) {
-            payrollWorker.current.terminate();
-        }
-    };
-  }, []);
 
   const handleSave = async (status: 'Draft' | 'Finalized') => {
     if (status === 'Finalized' && !window.confirm('Are you sure you want to finalize this payroll run? This action cannot be easily undone.')) {

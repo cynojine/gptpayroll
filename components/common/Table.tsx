@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 
 export interface Column<T> {
   header: string;
@@ -11,9 +11,10 @@ interface TableProps<T> {
   data: T[];
 }
 
-export const Table = <T extends { id: string | number }>(
-  { columns, data }: TableProps<T>
-): React.ReactNode => {
+export const Table = <T extends { id: string | number },>({
+  columns,
+  data,
+}: TableProps<T>): React.ReactNode => {
   return (
     <div className="overflow-x-auto bg-slate-800 rounded-lg shadow-lg">
       <table className="min-w-full text-sm text-left text-slate-300">
@@ -28,9 +29,15 @@ export const Table = <T extends { id: string | number }>(
         </thead>
         <tbody>
           {data.map((item) => (
-            <tr key={item.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors duration-150">
+            <tr
+              key={item.id}
+              className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors duration-150"
+            >
               {columns.map((col) => (
-                <td key={`${item.id}-${String(col.accessor)}`} className="px-6 py-4">
+                <td
+                  key={`${item.id}-${String(col.accessor)}`}
+                  className="px-6 py-4"
+                >
                   {col.render ? col.render(item) : String(item[col.accessor])}
                 </td>
               ))}

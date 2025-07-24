@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { PayrollItem } from '../../types';
 import * as api from '../../services/api';
@@ -12,14 +11,14 @@ const initialFormState: Omit<PayrollItem, 'id'> = {
 };
 
 export const PayrollItemManager: React.FC = () => {
-  const [items, setItems] = useState<PayrollItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState<PayrollItem | null>(null);
-  const [formData, setFormData] = useState(initialFormState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [items, setItems] = React.useState<PayrollItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isEditing, setIsEditing] = React.useState<PayrollItem | null>(null);
+  const [formData, setFormData] = React.useState(initialFormState);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const loadItems = useCallback(async () => {
+  const loadItems = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getPayrollItems();
@@ -32,7 +31,7 @@ export const PayrollItemManager: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadItems();
   }, [loadItems]);
 

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { Table } from './common/Table';
 import { LeaveRequest } from '../types';
@@ -9,9 +8,9 @@ import { useToast } from '../contexts/ToastContext';
 
 export const LeaveManagement: React.FC = () => {
   const { addToast } = useToast();
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [leaveRequests, setLeaveRequests] = React.useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   
   const fetchLeaveRequests = async () => {
     try {
@@ -27,7 +26,7 @@ export const LeaveManagement: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchLeaveRequests();
   }, []);
   

@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+
+import * as React from 'react';
 import { Card } from '../common/Card';
 import { Table, Column } from '../common/Table';
 import { NhimaReturnRow, BrandingSettings } from '../../types';
@@ -14,17 +15,17 @@ interface NhimaReturnReportProps {
 const formatCurrency = (value: number) => `ZMW ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const NhimaReturnReport: React.FC<NhimaReturnReportProps> = ({ onBack }) => {
-  const [reportData, setReportData] = useState<NhimaReturnRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [branding, setBranding] = useState<BrandingSettings | null>(null);
+  const [reportData, setReportData] = React.useState<NhimaReturnRow[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [branding, setBranding] = React.useState<BrandingSettings | null>(null);
   
   const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [period, setPeriod] = useState('');
+  const [year, setYear] = React.useState(currentYear);
+  const [month, setMonth] = React.useState(new Date().getMonth() + 1);
+  const [period, setPeriod] = React.useState('');
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchBranding = async () => {
       try {
         const settings = await getBrandingSettings();

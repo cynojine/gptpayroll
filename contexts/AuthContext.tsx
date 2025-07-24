@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import * as React from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import { getProfileForUser, getBrandingSettings } from '../services/api';
@@ -13,57 +13,46 @@ interface AuthContextType {
   signOut: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [branding, setBranding] = useState<BrandingSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [branding, setBranding] = React.useState<BrandingSettings | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
-    const initializeSession = async () => {
-        try {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) throw error;
-            
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            const [brandingSettings, userProfile] = await Promise.all([
-                getBrandingSettings(),
-                session?.user ? getProfileForUser() : Promise.resolve(null),
-            ]);
-            
-            setBranding(brandingSettings);
-            setProfile(userProfile);
-        } catch (error) {
-            console.error("Error during session initialization:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-    
-    initializeSession();
+  React.useEffect(() => {
+    // Supabase v2.x onAuthStateChange fires on initial load, and on subsequent auth events.
+    // This handles everything: initial load, login, logout.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      const userProfile = session?.user ? await getProfileForUser() : null;
-      setProfile(userProfile);
-      
-      // If auth state changes, we are no longer in the initial loading state.
-      setLoading(false);
+        // Fetch profile and branding settings in parallel.
+        // This ensures all required app-level data is loaded on any auth change.
+        const [userProfile, brandingSettings] = await Promise.all([
+          session?.user ? getProfileForUser() : Promise.resolve(null),
+          getBrandingSettings()
+        ]);
+
+        setProfile(userProfile);
+        setBranding(brandingSettings);
+      } catch (error) {
+        console.error("Error in onAuthStateChange handler:", error);
+      } finally {
+        // This is crucial. It ensures the app is never stuck in a loading state.
+        setLoading(false);
+      }
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
-  const signOut = useCallback(async () => {
+  const signOut = React.useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out:", error);
@@ -84,7 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 };
 
 export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }

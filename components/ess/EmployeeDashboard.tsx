@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { getMyLeaveRequests, getMyPayslips } from '../../services/api';
@@ -8,12 +7,12 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export const EmployeeDashboard: React.FC = () => {
     const { profile } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [pendingLeaves, setPendingLeaves] = useState<LeaveRequest[]>([]);
-    const [latestPayslip, setLatestPayslip] = useState<(PayrollData & { period: string }) | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [pendingLeaves, setPendingLeaves] = React.useState<LeaveRequest[]>([]);
+    const [latestPayslip, setLatestPayslip] = React.useState<(PayrollData & { period: string }) | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);

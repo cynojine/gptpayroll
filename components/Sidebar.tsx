@@ -1,5 +1,4 @@
-
-import React from 'react';
+import * as React from 'react';
 import { DashboardIcon, EmployeeIcon, PayrollIcon, ReportsIcon, LeaveIcon, PolicyIcon, SettingsIcon, CloseIcon } from './icons/IconComponents';
 import { useAuth } from '../contexts/AuthContext';
 import { View, BrandingSettings } from '../types';

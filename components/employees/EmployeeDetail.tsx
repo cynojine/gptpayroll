@@ -1,7 +1,4 @@
-
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { getEmployeeById, deleteEmployee } from '../../services/api';
 import { Employee } from '../../types';
 import { Card } from '../common/Card';
@@ -30,15 +27,15 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label
 
 export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId, onBack, onEmployeeDeleted }) => {
   const { addToast } = useToast();
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<EmployeeDetailTab>('details');
+  const [employee, setEmployee] = React.useState<Employee | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<EmployeeDetailTab>('details');
 
-  const fetchEmployee = useCallback(async () => {
+  const fetchEmployee = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await getEmployeeById(employeeId);
@@ -52,7 +49,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId, onBa
     }
   }, [employeeId]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchEmployee();
   }, [fetchEmployee]);
   

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { EmployeePayrollItem, PayrollItem } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -9,16 +8,16 @@ interface EmployeePayrollItemsProps {
 }
 
 export const EmployeePayrollItems: React.FC<EmployeePayrollItemsProps> = ({ employeeId }) => {
-  const [assignedItems, setAssignedItems] = useState<EmployeePayrollItem[]>([]);
-  const [availableItems, setAvailableItems] = useState<PayrollItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [assignedItems, setAssignedItems] = React.useState<EmployeePayrollItem[]>([]);
+  const [availableItems, setAvailableItems] = React.useState<PayrollItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const [selectedItemId, setSelectedItemId] = useState('');
-  const [value, setValue] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedItemId, setSelectedItemId] = React.useState('');
+  const [value, setValue] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
       const [assigned, available] = await Promise.all([
@@ -35,20 +34,25 @@ export const EmployeePayrollItems: React.FC<EmployeePayrollItemsProps> = ({ empl
     }
   }, [employeeId]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleAddItem = useCallback(async (e: React.FormEvent) => {
+  const handleAddItem = React.useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedItemId || value <= 0 || isSubmitting) return;
+    const numericValue = parseFloat(value);
+    
+    if (!selectedItemId || !value.trim() || isNaN(numericValue) || numericValue <= 0 || isSubmitting) {
+        setError('Please select an item and enter a valid, positive value.');
+        return;
+    }
 
     setIsSubmitting(true);
     setError(null);
     try {
-      await api.addEmployeePayrollItem(employeeId, selectedItemId, value);
+      await api.addEmployeePayrollItem(employeeId, selectedItemId, numericValue);
       setSelectedItemId('');
-      setValue(0);
+      setValue('');
       await loadData();
     } catch (err) {
       setError('Failed to add item. It may already be assigned.');
@@ -57,7 +61,7 @@ export const EmployeePayrollItems: React.FC<EmployeePayrollItemsProps> = ({ empl
     }
   }, [employeeId, selectedItemId, value, isSubmitting, loadData]);
   
-  const handleRemoveItem = useCallback(async (id: string) => {
+  const handleRemoveItem = React.useCallback(async (id: string) => {
     try {
         await api.removeEmployeePayrollItem(id);
         await loadData();
@@ -82,14 +86,14 @@ export const EmployeePayrollItems: React.FC<EmployeePayrollItemsProps> = ({ empl
         </div>
         <div className="w-1/4">
           <label htmlFor="value" className="block text-sm font-medium">Value (ZMW or %)</label>
-          <input type="number" id="value" value={value} onChange={e => setValue(parseFloat(e.target.value))} required min="0" step="any" className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
+          <input type="number" id="value" value={value} onChange={e => setValue(e.target.value)} required min="0" step="any" placeholder="e.g. 500 or 10" className="mt-1 w-full bg-slate-700 border-slate-600 rounded-md py-2 px-3" />
         </div>
         <button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-500">
           {isSubmitting ? 'Adding...' : 'Add'}
         </button>
       </form>
       
-      {error && <p className="text-red-400 mb-4">{error}</p>}
+      {error && <p className="text-red-400 mb-4 text-center">{error}</p>}
       
       <h4 className="text-md font-semibold text-slate-300 mb-2">Assigned Items</h4>
       {assignedItems.length === 0 ? (

@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { getEmployees, getLeaveRequests, getTaxBands, getPayrollSettings } from '../services/api';
 import { Employee, LeaveRequest, PayrollData, PayrollCalculationSettings } from '../types';
@@ -9,13 +7,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { calculatePayrollForEmployee } from '../services/payrollCalculations';
 
 export const Dashboard: React.FC = () => {
-    const [employees, setEmployees] = useState<Employee[]>([]);
-    const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-    const [payrollSettings, setPayrollSettings] = useState<PayrollCalculationSettings | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [employees, setEmployees] = React.useState<Employee[]>([]);
+    const [leaveRequests, setLeaveRequests] = React.useState<LeaveRequest[]>([]);
+    const [payrollSettings, setPayrollSettings] = React.useState<PayrollCalculationSettings | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -26,14 +24,18 @@ export const Dashboard: React.FC = () => {
                     getPayrollSettings()
                 ]);
 
-                const settingsMap = settings.reduce((acc, s) => ({...acc, [s.settingKey]: parseFloat(s.settingValue)}), {} as Record<string, number>);
+                const settingsMap = settings.reduce((acc, s) => {
+                    const parsedValue = parseFloat(s.settingValue);
+                    acc[s.settingKey] = isNaN(parsedValue) ? 0 : parsedValue;
+                    return acc;
+                }, {} as Record<string, number>);
 
                 const calcSettings: PayrollCalculationSettings = {
                     taxBands,
-                    napsaRate: settingsMap.napsa_rate,
-                    napsaCeiling: settingsMap.napsa_ceiling,
-                    nhimaRate: settingsMap.nhima_rate,
-                    nhimaMaxContribution: settingsMap.nhima_max_contribution
+                    napsaRate: settingsMap.napsa_rate || 0,
+                    napsaCeiling: settingsMap.napsa_ceiling || 0,
+                    nhimaRate: settingsMap.nhima_rate || 0,
+                    nhimaMaxContribution: settingsMap.nhima_max_contribution || 0
                 };
                 
                 setPayrollSettings(calcSettings);

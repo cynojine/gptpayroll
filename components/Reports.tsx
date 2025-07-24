@@ -1,7 +1,4 @@
-
-
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { PayeReturnReport } from './reports/PayeReturnReport';
 import { NapsaReturnReport } from './reports/NapsaReturnReport';
@@ -35,7 +32,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ title, description, onClick, di
 );
 
 export const Reports: React.FC = () => {
-  const [activeReport, setActiveReport] = useState<'menu' | 'paye' | 'napsa' | 'nhima'>('menu');
+  const [activeReport, setActiveReport] = React.useState<'menu' | 'paye' | 'napsa' | 'nhima'>('menu');
 
   const handleBackToMenu = () => setActiveReport('menu');
 

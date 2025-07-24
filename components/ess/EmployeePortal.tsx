@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { EmployeeSidebar } from './EmployeeSidebar';
 import { Header } from '../Header';
 import { EmployeeDashboard } from './EmployeeDashboard';
@@ -10,8 +9,8 @@ import { EssView } from '../../types';
 import { MyDocuments } from './MyDocuments';
 
 export const EmployeePortal: React.FC = () => {
-    const [activeView, setActiveView] = useState<EssView>('Dashboard');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [activeView, setActiveView] = React.useState<EssView>('Dashboard');
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
     
     return (
         <div className="flex h-screen bg-slate-900 text-slate-200">

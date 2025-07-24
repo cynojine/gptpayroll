@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+
+import * as React from 'react';
 import { CompanyHoliday } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -7,17 +8,17 @@ import { useToast } from '../../contexts/ToastContext';
 
 export const HolidayManager: React.FC = () => {
     const { addToast } = useToast();
-    const [holidays, setHolidays] = useState<CompanyHoliday[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [holidays, setHolidays] = React.useState<CompanyHoliday[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
     
     const currentYear = new Date().getFullYear();
-    const [year, setYear] = useState(currentYear);
+    const [year, setYear] = React.useState(currentYear);
 
-    const [newHoliday, setNewHoliday] = useState({ name: '', date: '' });
+    const [newHoliday, setNewHoliday] = React.useState({ name: '', date: '' });
 
-    const loadHolidays = useCallback(async () => {
+    const loadHolidays = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.getCompanyHolidays(year);
@@ -30,7 +31,7 @@ export const HolidayManager: React.FC = () => {
         }
     }, [year]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadHolidays();
     }, [loadHolidays]);
 

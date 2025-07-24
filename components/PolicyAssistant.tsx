@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { generateSqlStream, generatePolicyAnswerStream } from '../services/geminiService';
 import { ChatMessage, ChatRole } from '../types';
@@ -39,18 +38,18 @@ const ChatBubble: React.FC<{ message: ChatMessage; isSqlMode: boolean; }> = ({ m
 
 export const PolicyAssistant: React.FC = () => {
     const { profile } = useAuth();
-    const [activeTab, setActiveTab] = useState<AssistantTab>('ask');
-    const [history, setHistory] = useState<ChatMessage[]>([]);
-    const [prompt, setPrompt] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [policyContext, setPolicyContext] = useState<string | null>(null);
-    const [contextLoading, setContextLoading] = useState(true);
-    const [contextError, setContextError] = useState<string | null>(null);
-    const chatEndRef = useRef<HTMLDivElement>(null);
+    const [activeTab, setActiveTab] = React.useState<AssistantTab>('ask');
+    const [history, setHistory] = React.useState<ChatMessage[]>([]);
+    const [prompt, setPrompt] = React.useState('');
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [policyContext, setPolicyContext] = React.useState<string | null>(null);
+    const [contextLoading, setContextLoading] = React.useState(true);
+    const [contextError, setContextError] = React.useState<string | null>(null);
+    const chatEndRef = React.useRef<HTMLDivElement>(null);
 
     const isSqlMode = activeTab === 'sql';
 
-    useEffect(() => {
+    React.useEffect(() => {
         const loadPolicyContext = async () => {
             try {
                 setContextLoading(true);
@@ -71,7 +70,7 @@ export const PolicyAssistant: React.FC = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         scrollToBottom();
     }, [history]);
 
@@ -128,7 +127,7 @@ export const PolicyAssistant: React.FC = () => {
         }
     };
     
-    const [error, setError] = useState<string|null>(null);
+    const [error, setError] = React.useState<string|null>(null);
 
     const renderContent = () => {
         if(contextLoading) return <LoadingSpinner text="Loading AI Assistant..." />;

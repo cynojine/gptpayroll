@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Sidebar } from './components/Sidebar';
 import { View } from './types';
 import { Header } from './components/Header';
@@ -17,8 +15,8 @@ import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { EmployeePortal } from './components/ess/EmployeePortal';
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<View>('Dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeView, setActiveView] = React.useState<View>('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const { session, profile, loading } = useAuth();
 
   if (loading) {

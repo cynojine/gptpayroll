@@ -1,10 +1,8 @@
-
-
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Card } from './common/Card';
 import { SettingsCategoryManager } from './settings/SettingsCategoryManager';
 import * as api from '../services/api';
-import { Department, JobTitle, ContractType, LeaveType } from '../types';
+import { Department, JobTitle, ContractType, LeaveType, PayrollItem } from '../types';
 import { PayrollItemManager } from './settings/PayrollItemManager';
 import { TaxBandManager } from './settings/TaxBandManager';
 import { StatutorySettingsManager } from './settings/StatutorySettingsManager';
@@ -15,7 +13,7 @@ import { PolicyDocumentManager } from './settings/PolicyDocumentManager';
 type Tab = 'Branding' | 'Company Policies' | 'Holidays' | 'Departments' | 'Job Titles' | 'Contract Types' | 'Leave Types' | 'Payroll Items' | 'Statutory & Tax';
 
 export const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('Branding');
+  const [activeTab, setActiveTab] = React.useState<Tab>('Branding');
 
   const tabs: Tab[] = ['Branding', 'Company Policies', 'Holidays', 'Departments', 'Job Titles', 'Contract Types', 'Leave Types', 'Payroll Items', 'Statutory & Tax'];
 

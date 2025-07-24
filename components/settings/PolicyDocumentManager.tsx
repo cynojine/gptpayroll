@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+
+import * as React from 'react';
 import { PolicyDocument } from '../../types';
 import * as api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,13 +17,13 @@ const formatBytes = (bytes: number, decimals = 2) => {
 
 export const PolicyDocumentManager: React.FC = () => {
     const { addToast } = useToast();
-    const [documents, setDocuments] = useState<PolicyDocument[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+    const [documents, setDocuments] = React.useState<PolicyDocument[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const [fileToUpload, setFileToUpload] = React.useState<File | null>(null);
 
-    const loadDocuments = useCallback(async () => {
+    const loadDocuments = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.listPolicyDocuments();
@@ -35,7 +36,7 @@ export const PolicyDocumentManager: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadDocuments();
     }, [loadDocuments]);
 

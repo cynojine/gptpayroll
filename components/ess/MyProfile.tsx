@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { getEmployeeDataForUser, getEmployeePayrollItems } from '../../services/api';
@@ -13,14 +12,20 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label
 );
 
 const AssignedPayrollItems: React.FC<{ employeeId: string }> = ({ employeeId }) => {
-    const [items, setItems] = useState<EmployeePayrollItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [items, setItems] = React.useState<EmployeePayrollItem[]>([]);
+    const [loading, setLoading] = React.useState(true);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchItems = async () => {
-            const data = await getEmployeePayrollItems(employeeId);
-            setItems(data);
-            setLoading(false);
+            setLoading(true);
+            try {
+                const data = await getEmployeePayrollItems(employeeId);
+                setItems(data);
+            } catch (err) {
+                console.error("Failed to fetch assigned payroll items", err);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchItems();
     }, [employeeId]);
@@ -42,15 +47,15 @@ const AssignedPayrollItems: React.FC<{ employeeId: string }> = ({ employeeId }) 
                 </li>
             ))}
         </ul>
-    )
-}
+    );
+};
 
 export const MyProfile: React.FC = () => {
-    const [employee, setEmployee] = useState<Employee | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [employee, setEmployee] = React.useState<Employee | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);

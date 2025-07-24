@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { getEmployeeDataForUser } from '../../services/api';
 import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { EmployeeDocuments } from '../documents/EmployeeDocuments';
 
 export const MyDocuments: React.FC = () => {
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [employeeId, setEmployeeId] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const fetchEmployee = async () => {
             try {
                 const employee = await getEmployeeDataForUser();

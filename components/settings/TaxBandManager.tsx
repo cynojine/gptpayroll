@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { TaxBand } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -8,12 +6,12 @@ import { useToast } from '../../contexts/ToastContext';
 
 export const TaxBandManager: React.FC = () => {
     const { addToast } = useToast();
-    const [bands, setBands] = useState<TaxBand[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [bands, setBands] = React.useState<TaxBand[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const loadBands = useCallback(async () => {
+    const loadBands = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.getTaxBands();
@@ -26,7 +24,7 @@ export const TaxBandManager: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadBands();
     }, [loadBands]);
 

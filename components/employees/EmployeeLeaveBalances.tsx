@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+
+import * as React from 'react';
 import { LeaveBalance, LeaveType } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -18,15 +19,15 @@ interface AdjustmentState {
 
 export const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({ employeeId }) => {
     const { addToast } = useToast();
-    const [balances, setBalances] = useState<LeaveBalance[]>([]);
-    const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [adjustment, setAdjustment] = useState<AdjustmentState | null>(null);
-    const [newBalance, setNewBalance] = useState(0);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [balances, setBalances] = React.useState<LeaveBalance[]>([]);
+    const [leaveTypes, setLeaveTypes] = React.useState<LeaveType[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [adjustment, setAdjustment] = React.useState<AdjustmentState | null>(null);
+    const [newBalance, setNewBalance] = React.useState(0);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const loadData = useCallback(async () => {
+    const loadData = React.useCallback(async () => {
         try {
             setLoading(true);
             const [fetchedBalances, fetchedLeaveTypes] = await Promise.all([
@@ -43,7 +44,7 @@ export const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({ em
         }
     }, [employeeId]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadData();
     }, [loadData]);
 

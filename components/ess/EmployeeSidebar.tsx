@@ -1,5 +1,4 @@
-
-import React from 'react';
+import * as React from 'react';
 import { DashboardIcon, EmployeeIcon, PayrollIcon, LeaveIcon, DocumentIcon, CloseIcon } from '../icons/IconComponents';
 import { ZambianFlag } from '../icons/IconComponents';
 import { useAuth } from '../../contexts/AuthContext';

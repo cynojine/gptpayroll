@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { PayrollSetting } from '../../types';
 import * as api from '../../services/api';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -23,12 +21,12 @@ const keyToLabelMapping: Record<string, string> = {
 
 export const StatutorySettingsManager: React.FC = () => {
     const { addToast } = useToast();
-    const [settings, setSettings] = useState<FormattedSetting[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [settings, setSettings] = React.useState<FormattedSetting[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const loadSettings = useCallback(async () => {
+    const loadSettings = React.useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.getPayrollSettings();
@@ -48,7 +46,7 @@ export const StatutorySettingsManager: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadSettings();
     }, [loadSettings]);
 
