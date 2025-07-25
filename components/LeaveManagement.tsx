@@ -2,47 +2,23 @@ import * as React from 'react';
 import { Card } from './common/Card';
 import { Table } from './common/Table';
 import { LeaveRequest } from '../types';
-import { getLeaveRequests, updateLeaveRequestStatus } from '../services/api';
-import { LoadingSpinner } from './common/LoadingSpinner';
+import { updateLeaveRequestStatus } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
-export const LeaveManagement: React.FC = () => {
-  const { addToast } = useToast();
-  const [leaveRequests, setLeaveRequests] = React.useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  
-  const fetchLeaveRequests = async () => {
-    try {
-      setLoading(true);
-      const data = await getLeaveRequests();
-      setLeaveRequests(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch leave requests.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+interface LeaveManagementProps {
+  leaveRequests: LeaveRequest[];
+  onDataChange: () => void;
+}
 
-  React.useEffect(() => {
-    fetchLeaveRequests();
-  }, []);
+export const LeaveManagement: React.FC<LeaveManagementProps> = ({ leaveRequests, onDataChange }) => {
+  const { addToast } = useToast();
   
   const handleStatusChange = async (request: LeaveRequest, newStatus: 'Approved' | 'Rejected') => {
-      const originalRequests = [...leaveRequests];
-      const updatedRequests = leaveRequests.map(req => 
-        req.id === request.id ? { ...req, status: newStatus } : req
-      );
-      setLeaveRequests(updatedRequests);
-
       try {
         await updateLeaveRequestStatus(request, newStatus);
         addToast(`Leave request has been ${newStatus.toLowerCase()}. Balance updated.`, 'success');
-        // No need to re-fetch, the optimistic update and balance logic are sufficient.
+        onDataChange();
       } catch (err) {
-        setLeaveRequests(originalRequests); // Revert on failure
         addToast(`Failed to update status: ${(err as Error).message}`, 'error');
       }
   }
@@ -80,9 +56,7 @@ export const LeaveManagement: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-white">Leave Requests</h2>
       </div>
-      {loading && <LoadingSpinner />}
-      {error && <p className="text-center text-red-400">{error}</p>}
-      {!loading && !error && <Table columns={columns} data={leaveRequests} />}
+      <Table columns={columns} data={leaveRequests} />
     </Card>
   );
 };

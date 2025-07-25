@@ -4,7 +4,11 @@ import * as React from 'react';
 import { PolicyDocument } from '../../types';
 import * as api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+
+interface PolicyDocumentManagerProps {
+    documents: PolicyDocument[];
+    onDataChange: () => void;
+}
 
 const formatBytes = (bytes: number, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
@@ -15,30 +19,10 @@ const formatBytes = (bytes: number, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-export const PolicyDocumentManager: React.FC = () => {
+export const PolicyDocumentManager: React.FC<PolicyDocumentManagerProps> = ({ documents, onDataChange }) => {
     const { addToast } = useToast();
-    const [documents, setDocuments] = React.useState<PolicyDocument[]>([]);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
     const [isUploading, setIsUploading] = React.useState(false);
     const [fileToUpload, setFileToUpload] = React.useState<File | null>(null);
-
-    const loadDocuments = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await api.listPolicyDocuments();
-            setDocuments(data);
-            setError(null);
-        } catch (err: any) {
-            setError(err.message || 'Failed to load policy documents.');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    React.useEffect(() => {
-        loadDocuments();
-    }, [loadDocuments]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -53,13 +37,12 @@ export const PolicyDocumentManager: React.FC = () => {
     const handleUpload = async () => {
         if (!fileToUpload || isUploading) return;
         setIsUploading(true);
-        setError(null);
         try {
             await api.uploadPolicyDocument(fileToUpload);
             addToast('Policy document uploaded successfully!', 'success');
             setFileToUpload(null);
             (document.getElementById('policy-upload') as HTMLInputElement).value = ''; // Reset file input
-            await loadDocuments();
+            onDataChange();
         } catch (err: any) {
             addToast(err.message || 'File upload failed.', 'error');
         } finally {
@@ -72,7 +55,7 @@ export const PolicyDocumentManager: React.FC = () => {
             try {
                 await api.deletePolicyDocument(doc);
                 addToast('Policy document deleted.', 'success');
-                await loadDocuments();
+                onDataChange();
             } catch (err: any) {
                 addToast(err.message || 'Failed to delete document.', 'error');
             }
@@ -102,29 +85,27 @@ export const PolicyDocumentManager: React.FC = () => {
                 </button>
             </div>
             
-            {loading ? <LoadingSpinner /> : error ? <p className="text-red-400 text-center">{error}</p> : (
-                documents.length === 0 ? (
-                    <p className="text-slate-500 text-center py-8">No policy documents uploaded yet.</p>
-                ) : (
-                    <ul className="divide-y divide-slate-700">
-                        {documents.map(doc => (
-                            <li key={doc.id} className="py-3 flex items-center justify-between hover:bg-slate-800/50 px-2 rounded-md">
-                                <div className="flex items-center space-x-3">
-                                    <svg className="w-6 h-6 text-slate-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0011.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                    <div>
-                                        <p className="font-medium text-slate-200">{doc.fileName}</p>
-                                        <p className="text-sm text-slate-400">
-                                            {formatBytes(doc.fileSize)} &bull; Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
+            {documents.length === 0 ? (
+                <p className="text-slate-500 text-center py-8">No policy documents uploaded yet.</p>
+            ) : (
+                <ul className="divide-y divide-slate-700">
+                    {documents.map(doc => (
+                        <li key={doc.id} className="py-3 flex items-center justify-between hover:bg-slate-800/50 px-2 rounded-md">
+                            <div className="flex items-center space-x-3">
+                                <svg className="w-6 h-6 text-slate-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0011.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                <div>
+                                    <p className="font-medium text-slate-200">{doc.fileName}</p>
+                                    <p className="text-sm text-slate-400">
+                                        {formatBytes(doc.fileSize)} &bull; Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                                    </p>
                                 </div>
-                                <div className="flex items-center space-x-4">
-                                    <button onClick={() => handleDelete(doc)} className="text-red-500 hover:text-red-400 font-medium text-sm">Delete</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <button onClick={() => handleDelete(doc)} className="text-red-500 hover:text-red-400 font-medium text-sm">Delete</button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

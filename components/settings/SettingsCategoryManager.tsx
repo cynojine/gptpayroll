@@ -1,46 +1,27 @@
 import * as React from 'react';
-import { LoadingSpinner } from '../common/LoadingSpinner';
 import { SettingsCategory } from '../../types';
 
 interface SettingsCategoryManagerProps<T extends SettingsCategory> {
   categoryName: string;
-  fetchItems: () => Promise<T[]>;
+  items: T[];
   createItem: (name: string) => Promise<T>;
   updateItem: (id: string, name: string) => Promise<T>;
   deleteItem: (id: string) => Promise<void>;
+  onDataChange: () => void;
 }
 
 export const SettingsCategoryManager = <T extends SettingsCategory,>({
   categoryName,
-  fetchItems,
+  items,
   createItem,
   updateItem,
   deleteItem,
+  onDataChange,
 }: SettingsCategoryManagerProps<T>) => {
-  const [items, setItems] = React.useState<T[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
   const [isEditing, setIsEditing] = React.useState<T | null>(null);
   const [name, setName] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const loadItems = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchItems();
-      setItems(data);
-      setError(null);
-    } catch (err) {
-      setError(`Failed to fetch ${categoryName.toLowerCase()}s.`);
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchItems, categoryName]);
-
-  React.useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = React.useCallback(
     async (e: React.FormEvent) => {
@@ -58,7 +39,7 @@ export const SettingsCategoryManager = <T extends SettingsCategory,>({
         }
         setName('');
         setIsEditing(null);
-        await loadItems(); // Reload list
+        onDataChange();
       } catch (err) {
         setError(
           `Failed to save ${categoryName.toLowerCase()}. Name might already exist.`
@@ -67,7 +48,7 @@ export const SettingsCategoryManager = <T extends SettingsCategory,>({
         setIsSubmitting(false);
       }
     },
-    [name, isSubmitting, isEditing, updateItem, createItem, loadItems, categoryName]
+    [name, isSubmitting, isEditing, updateItem, createItem, onDataChange, categoryName]
   );
 
   const handleEdit = React.useCallback((item: T) => {
@@ -90,7 +71,7 @@ export const SettingsCategoryManager = <T extends SettingsCategory,>({
       ) {
         try {
           await deleteItem(id);
-          await loadItems();
+          onDataChange();
         } catch (err) {
           setError(
             `Failed to delete ${categoryName.toLowerCase()}. It may be in use.`
@@ -98,7 +79,7 @@ export const SettingsCategoryManager = <T extends SettingsCategory,>({
         }
       }
     },
-    [deleteItem, loadItems, categoryName]
+    [deleteItem, onDataChange, categoryName]
   );
 
   return (
@@ -143,38 +124,34 @@ export const SettingsCategoryManager = <T extends SettingsCategory,>({
 
       {error && <p className="text-red-400 mb-4">{error}</p>}
 
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <div className="flow-root">
-          <ul role="list" className="divide-y divide-slate-700">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="py-3 sm:py-4 flex items-center justify-between"
-              >
-                <p className="text-sm font-medium text-slate-200 truncate">
-                  {item.name}
-                </p>
-                <div className="space-x-4">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="text-blue-400 hover:text-blue-300 font-medium text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-red-500 hover:text-red-400 font-medium text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="flow-root">
+        <ul role="list" className="divide-y divide-slate-700">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="py-3 sm:py-4 flex items-center justify-between"
+            >
+              <p className="text-sm font-medium text-slate-200 truncate">
+                {item.name}
+              </p>
+              <div className="space-x-4">
+                <button
+                  onClick={() => handleEdit(item)}
+                  className="text-blue-400 hover:text-blue-300 font-medium text-sm"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="text-red-500 hover:text-red-400 font-medium text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

@@ -14,6 +14,7 @@ interface EmployeeDetailProps {
   employeeId: string;
   onBack: () => void;
   onEmployeeDeleted: () => void;
+  onEmployeeUpdated: () => void;
 }
 
 type EmployeeDetailTab = 'details' | 'payroll' | 'documents' | 'leave';
@@ -25,7 +26,7 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label
     </div>
 );
 
-export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId, onBack, onEmployeeDeleted }) => {
+export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId, onBack, onEmployeeDeleted, onEmployeeUpdated }) => {
   const { addToast } = useToast();
   const [employee, setEmployee] = React.useState<Employee | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -55,7 +56,8 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employeeId, onBa
   
   const handleEmployeeUpdated = () => {
       setIsEditModalOpen(false);
-      fetchEmployee(); // Refresh details
+      onEmployeeUpdated(); // Use the callback from the parent
+      fetchEmployee(); // Also fetch locally to update this component view immediately
   }
 
   const handleConfirmDelete = async () => {

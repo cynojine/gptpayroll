@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Card } from './common/Card';
 import { SettingsCategoryManager } from './settings/SettingsCategoryManager';
 import * as api from '../services/api';
-import { Department, JobTitle, ContractType, LeaveType, PayrollItem } from '../types';
+import { Department, JobTitle, ContractType, LeaveType, PayrollItem, ApplicationData } from '../types';
 import { PayrollItemManager } from './settings/PayrollItemManager';
 import { TaxBandManager } from './settings/TaxBandManager';
 import { StatutorySettingsManager } from './settings/StatutorySettingsManager';
@@ -12,7 +12,12 @@ import { PolicyDocumentManager } from './settings/PolicyDocumentManager';
 
 type Tab = 'Branding' | 'Company Policies' | 'Holidays' | 'Departments' | 'Job Titles' | 'Contract Types' | 'Leave Types' | 'Payroll Items' | 'Statutory & Tax';
 
-export const Settings: React.FC = () => {
+interface SettingsProps {
+    appData: ApplicationData;
+    onDataChange: () => void;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ appData, onDataChange }) => {
   const [activeTab, setActiveTab] = React.useState<Tab>('Branding');
 
   const tabs: Tab[] = ['Branding', 'Company Policies', 'Holidays', 'Departments', 'Job Titles', 'Contract Types', 'Leave Types', 'Payroll Items', 'Statutory & Tax'];
@@ -20,50 +25,54 @@ export const Settings: React.FC = () => {
   const renderContent = () => {
     switch(activeTab) {
       case 'Branding':
-        return <BrandingManager />;
+        return <BrandingManager onDataChange={onDataChange} />;
       case 'Company Policies':
-        return <PolicyDocumentManager />;
+        return <PolicyDocumentManager documents={appData.policyDocuments} onDataChange={onDataChange} />;
       case 'Holidays':
-        return <HolidayManager />;
+        return <HolidayManager holidays={appData.holidays} onDataChange={onDataChange} />;
       case 'Departments':
         return <SettingsCategoryManager<Department> 
                     categoryName="Department"
-                    fetchItems={api.getDepartments}
+                    items={appData.departments}
                     createItem={api.createDepartment}
                     updateItem={api.updateDepartment}
                     deleteItem={api.deleteDepartment}
+                    onDataChange={onDataChange}
                 />;
       case 'Job Titles':
         return <SettingsCategoryManager<JobTitle>
                     categoryName="Job Title"
-                    fetchItems={api.getJobTitles}
+                    items={appData.jobTitles}
                     createItem={api.createJobTitle}
                     updateItem={api.updateJobTitle}
                     deleteItem={api.deleteJobTitle}
+                    onDataChange={onDataChange}
                 />;
       case 'Contract Types':
         return <SettingsCategoryManager<ContractType>
                     categoryName="Contract Type"
-                    fetchItems={api.getContractTypes}
+                    items={appData.contractTypes}
                     createItem={api.createContractType}
                     updateItem={api.updateContractType}
                     deleteItem={api.deleteContractType}
+                    onDataChange={onDataChange}
                 />;
       case 'Leave Types':
         return <SettingsCategoryManager<LeaveType>
                     categoryName="Leave Type"
-                    fetchItems={api.getLeaveTypes}
+                    items={appData.leaveTypes}
                     createItem={api.createLeaveType}
                     updateItem={api.updateLeaveType}
                     deleteItem={api.deleteLeaveType}
+                    onDataChange={onDataChange}
                 />;
       case 'Payroll Items':
-        return <PayrollItemManager />;
+        return <PayrollItemManager items={appData.payrollItems} onDataChange={onDataChange} />;
       case 'Statutory & Tax':
         return (
           <div className="space-y-8">
-            <TaxBandManager />
-            <StatutorySettingsManager />
+            <TaxBandManager bands={appData.payrollSettings?.taxBands || []} onDataChange={onDataChange} />
+            <StatutorySettingsManager settings={appData.payrollSettings} onDataChange={onDataChange} />
           </div>
         );
       default:

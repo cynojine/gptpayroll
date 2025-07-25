@@ -1,59 +1,38 @@
 import * as React from 'react';
 import { Card } from './common/Card';
 import { Table, Column } from './common/Table';
-import { getEmployees, getPayrollRun, savePayrollRun, getTaxBands, getPayrollSettings, getFinalizedPayrollDetailsForYear, getBrandingSettings, getLeaveBalances } from '../services/api';
+import { getPayrollRun, savePayrollRun, getFinalizedPayrollDetailsForYear, getBrandingSettings, getLeaveBalances } from '../services/api';
 import { Employee, PayrollData, PayslipDisplayData, PayrollCalculationSettings } from '../types';
 import { LoadingSpinner } from './common/LoadingSpinner';
 import { calculatePayrollForEmployee } from '../services/payrollCalculations';
 import { PayslipModal } from './payroll/PayslipModal';
 import { useToast } from '../contexts/ToastContext';
 
-export const Payroll: React.FC = () => {
+interface PayrollProps {
+  employees: Employee[];
+  payrollSettings: PayrollCalculationSettings | null;
+  onDataChange: () => void;
+}
+
+export const Payroll: React.FC<PayrollProps> = ({ employees, payrollSettings, onDataChange }) => {
   const { addToast } = useToast();
-  const [employees, setEmployees] = React.useState<Employee[]>([]);
   const [payrollData, setPayrollData] = React.useState<PayrollData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedPayslipData, setSelectedPayslipData] = React.useState<PayslipDisplayData | null>(null);
   const [runStatus, setRunStatus] = React.useState<'Draft' | 'Finalized'>('Draft');
-  const [payrollSettings, setPayrollSettings] = React.useState<PayrollCalculationSettings | null>(null);
 
   const currentDate = new Date();
   const [month, setMonth] = React.useState(currentDate.getMonth() + 1);
   const [year, setYear] = React.useState(currentDate.getFullYear());
 
-  const fetchPayrollPrerequisites = React.useCallback(async () => {
-    try {
-        const [taxBands, settings, emps] = await Promise.all([
-            getTaxBands(),
-            getPayrollSettings(),
-            getEmployees(true) // Fetch employees with payroll items
-        ]);
-        setEmployees(emps);
-
-        const settingsMap = settings.reduce((acc, s) => {
-            const parsedValue = parseFloat(s.settingValue);
-            acc[s.settingKey] = isNaN(parsedValue) ? 0 : parsedValue;
-            return acc;
-        }, {} as Record<string, number>);
-
-        setPayrollSettings({
-            taxBands,
-            napsaRate: settingsMap.napsa_rate || 0,
-            napsaCeiling: settingsMap.napsa_ceiling || 0,
-            nhimaRate: settingsMap.nhima_rate || 0,
-            nhimaMaxContribution: settingsMap.nhima_max_contribution || 0
-        });
-
-    } catch (err) {
-        setError('Failed to load critical payroll settings. Please configure them first.');
-        console.error(err);
-    }
-  }, []);
 
   const fetchAndProcessPayroll = React.useCallback(async () => {
-    if (!payrollSettings || employees.length === 0) return;
+    if (!payrollSettings || employees.length === 0) {
+        setLoading(false);
+        return;
+    };
     
     try {
       setLoading(true);
@@ -82,16 +61,10 @@ export const Payroll: React.FC = () => {
       setLoading(false);
     }
   }, [month, year, payrollSettings, employees]);
-  
-  React.useEffect(() => {
-    fetchPayrollPrerequisites();
-  }, [fetchPayrollPrerequisites]);
 
   React.useEffect(() => {
-    if (payrollSettings && employees.length > 0) {
-        fetchAndProcessPayroll();
-    }
-  }, [fetchAndProcessPayroll, payrollSettings, employees]);
+    fetchAndProcessPayroll();
+  }, [fetchAndProcessPayroll]);
 
   const handleSave = async (status: 'Draft' | 'Finalized') => {
     if (status === 'Finalized' && !window.confirm('Are you sure you want to finalize this payroll run? This action cannot be easily undone.')) {
@@ -103,6 +76,9 @@ export const Payroll: React.FC = () => {
         await savePayrollRun(month, year, payrollData, status);
         setRunStatus(status);
         addToast(`Payroll successfully saved as ${status}.`, 'success');
+        if(status === 'Finalized') {
+            onDataChange(); // Re-fetch all data to update leave balances, etc.
+        }
     } catch(err) {
         const errorMessage = 'Failed to save payroll run.';
         setError(errorMessage);

@@ -1,11 +1,15 @@
 import * as React from 'react';
-import { PayrollSetting } from '../../types';
+import { PayrollCalculationSettings, PayrollSetting } from '../../types';
 import * as api from '../../services/api';
-import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../contexts/ToastContext';
 
+interface StatutorySettingsManagerProps {
+    settings: PayrollCalculationSettings | null;
+    onDataChange: () => void;
+}
+
 interface FormattedSetting {
-    id: string;
+    id: string; // This might be a synthetic key if the original is not available
     key: string;
     value: string;
     label: string;
@@ -13,45 +17,32 @@ interface FormattedSetting {
 }
 
 const keyToLabelMapping: Record<string, string> = {
-    napsa_ceiling: 'NAPSA Contribution Ceiling (ZMW)',
-    nhima_max_contribution: 'NHIMA Max Contribution (ZMW)',
-    napsa_rate: 'NAPSA Rate (%)',
-    nhima_rate: 'NHIMA Rate (%)'
+    napsaCeiling: 'NAPSA Contribution Ceiling (ZMW)',
+    nhimaMaxContribution: 'NHIMA Max Contribution (ZMW)',
+    napsaRate: 'NAPSA Rate (%)',
+    nhimaRate: 'NHIMA Rate (%)'
 };
 
-export const StatutorySettingsManager: React.FC = () => {
+export const StatutorySettingsManager: React.FC<StatutorySettingsManagerProps> = ({ settings, onDataChange }) => {
     const { addToast } = useToast();
-    const [settings, setSettings] = React.useState<FormattedSetting[]>([]);
-    const [loading, setLoading] = React.useState(true);
+    const [formattedSettings, setFormattedSettings] = React.useState<FormattedSetting[]>([]);
     const [error, setError] = React.useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const loadSettings = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await api.getPayrollSettings();
-            const formatted = data.map(s => ({
-                id: s.id,
-                key: s.settingKey,
-                value: s.settingValue,
-                label: keyToLabelMapping[s.settingKey] || s.settingKey,
-                isRate: s.settingKey.includes('_rate')
-            }));
-            setSettings(formatted);
-            setError(null);
-        } catch (err) {
-            setError('Failed to load statutory settings.');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     React.useEffect(() => {
-        loadSettings();
-    }, [loadSettings]);
+        if (settings) {
+            const transformedSettings: FormattedSetting[] = [
+                { id: 'napsa_rate', key: 'napsaRate', value: String(settings.napsaRate), label: keyToLabelMapping.napsaRate, isRate: true },
+                { id: 'napsa_ceiling', key: 'napsaCeiling', value: String(settings.napsaCeiling), label: keyToLabelMapping.napsaCeiling, isRate: false },
+                { id: 'nhima_rate', key: 'nhimaRate', value: String(settings.nhimaRate), label: keyToLabelMapping.nhimaRate, isRate: true },
+                { id: 'nhima_max_contribution', key: 'nhimaMaxContribution', value: String(settings.nhimaMaxContribution), label: keyToLabelMapping.nhimaMaxContribution, isRate: false },
+            ];
+            setFormattedSettings(transformedSettings);
+        }
+    }, [settings]);
 
     const handleSettingChange = (key: string, value: string) => {
-        setSettings(prevSettings =>
+        setFormattedSettings(prevSettings =>
             prevSettings.map(s =>
                 s.key === key ? { ...s, value } : s
             )
@@ -62,13 +53,14 @@ export const StatutorySettingsManager: React.FC = () => {
         setIsSubmitting(true);
         setError(null);
         try {
-            const payload = settings.map(s => ({
-                id: s.id,
-                settingKey: s.key,
+            const payload: PayrollSetting[] = formattedSettings.map(s => ({
+                id: s.id, // The ID here is the original setting_key from the DB
+                settingKey: s.id,
                 settingValue: s.isRate ? String(parseFloat(s.value) / 100) : s.value
             }));
             await api.upsertPayrollSettings(payload);
             addToast('Settings updated successfully!', 'success');
+            onDataChange();
         } catch (err) {
             const msg = 'Failed to save settings.';
             setError(msg);
@@ -78,14 +70,14 @@ export const StatutorySettingsManager: React.FC = () => {
         }
     };
 
-    if (loading) return <LoadingSpinner text="Loading statutory settings..." />;
-    if (error && !isSubmitting) return <p className="text-red-400">{error}</p>;
+    if (!settings) return <p className="text-yellow-400">Statutory settings could not be loaded.</p>;
+    if (error) return <p className="text-red-400">{error}</p>;
 
     return (
         <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/50">
             <h3 className="text-lg font-bold mb-4">Statutory Contributions</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {settings.map(setting => (
+                {formattedSettings.map(setting => (
                     <div key={setting.key}>
                         <label htmlFor={setting.key} className="block text-sm font-medium text-slate-300">{setting.label}</label>
                         <input

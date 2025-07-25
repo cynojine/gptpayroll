@@ -1,7 +1,11 @@
 import * as React from 'react';
-import { LoadingSpinner } from '../common/LoadingSpinner';
 import { PayrollItem } from '../../types';
 import * as api from '../../services/api';
+
+interface PayrollItemManagerProps {
+  items: PayrollItem[];
+  onDataChange: () => void;
+}
 
 const initialFormState: Omit<PayrollItem, 'id'> = {
   name: '',
@@ -10,30 +14,11 @@ const initialFormState: Omit<PayrollItem, 'id'> = {
   isTaxable: true,
 };
 
-export const PayrollItemManager: React.FC = () => {
-  const [items, setItems] = React.useState<PayrollItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
+export const PayrollItemManager: React.FC<PayrollItemManagerProps> = ({ items, onDataChange }) => {
   const [error, setError] = React.useState<string | null>(null);
   const [isEditing, setIsEditing] = React.useState<PayrollItem | null>(null);
   const [formData, setFormData] = React.useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const loadItems = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await api.getPayrollItems();
-      setItems(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch payroll items.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    loadItems();
-  }, [loadItems]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -57,7 +42,7 @@ export const PayrollItemManager: React.FC = () => {
       }
       setFormData(initialFormState);
       setIsEditing(null);
-      await loadItems();
+      onDataChange();
     } catch (err) {
       setError('Failed to save payroll item. Name might already exist.');
     } finally {
@@ -80,7 +65,7 @@ export const PayrollItemManager: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this payroll item?')) {
       try {
         await api.deletePayrollItem(id);
-        await loadItems();
+        onDataChange();
       } catch (err) {
         setError('Failed to delete item. It may be in use by an employee.');
       }
@@ -127,23 +112,21 @@ export const PayrollItemManager: React.FC = () => {
 
       {error && <p className="text-red-400 mb-4">{error}</p>}
       
-      {loading ? ( <LoadingSpinner /> ) : (
-        <div className="flow-root">
-            <ul role="list" className="divide-y divide-slate-700">
-            {items.map((item) => (
-                <li key={item.id} className="py-3 sm:py-4 grid grid-cols-4 gap-4 items-center">
-                    <p className="font-medium text-slate-200 truncate col-span-1">{item.name}</p>
-                    <p className="text-sm col-span-1"><span className={`px-2 py-1 text-xs rounded-full ${item.type === 'Addition' ? 'bg-blue-900 text-blue-300' : 'bg-red-900 text-red-300'}`}>{item.type}</span></p>
-                    <p className="text-sm text-slate-400 col-span-1">{item.calculationType}</p>
-                    <div className="space-x-4 text-right col-span-1">
-                        <button onClick={() => handleEdit(item)} className="text-blue-400 hover:text-blue-300 font-medium text-sm">Edit</button>
-                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-400 font-medium text-sm">Delete</button>
-                    </div>
-                </li>
-            ))}
-            </ul>
-        </div>
-      )}
+      <div className="flow-root">
+          <ul role="list" className="divide-y divide-slate-700">
+          {items.map((item) => (
+              <li key={item.id} className="py-3 sm:py-4 grid grid-cols-4 gap-4 items-center">
+                  <p className="font-medium text-slate-200 truncate col-span-1">{item.name}</p>
+                  <p className="text-sm col-span-1"><span className={`px-2 py-1 text-xs rounded-full ${item.type === 'Addition' ? 'bg-blue-900 text-blue-300' : 'bg-red-900 text-red-300'}`}>{item.type}</span></p>
+                  <p className="text-sm text-slate-400 col-span-1">{item.calculationType}</p>
+                  <div className="space-x-4 text-right col-span-1">
+                      <button onClick={() => handleEdit(item)} className="text-blue-400 hover:text-blue-300 font-medium text-sm">Edit</button>
+                      <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-400 font-medium text-sm">Delete</button>
+                  </div>
+              </li>
+          ))}
+          </ul>
+      </div>
     </div>
   );
 };

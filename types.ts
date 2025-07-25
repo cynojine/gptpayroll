@@ -1,5 +1,6 @@
 
 
+
 export type Json =
   | string
   | number
@@ -274,6 +275,19 @@ export interface PolicyDocument {
   uploadedAt: string;
 }
 
+export interface ApplicationData {
+  employees: Employee[];
+  leaveRequests: LeaveRequest[];
+  departments: Department[];
+  jobTitles: JobTitle[];
+  contractTypes: ContractType[];
+  leaveTypes: LeaveType[];
+  payrollItems: PayrollItem[];
+  payrollSettings: PayrollCalculationSettings | null;
+  holidays: CompanyHoliday[];
+  policyDocuments: PolicyDocument[];
+}
+
 
 export interface Database {
   public: {
@@ -283,112 +297,112 @@ export interface Database {
         Insert: { id?: number; company_name?: string | null; company_address?: string | null; logo_url?: string | null; created_at?: string | null; };
         Update: { id?: number; company_name?: string | null; company_address?: string | null; logo_url?: string | null; created_at?: string | null; };
         Relationships: [];
-      },
+      };
       departments: {
         Row: { id: string; name: string; };
         Insert: { id?: string; name: string; };
         Update: { id?: string; name?: string; };
         Relationships: [];
-      },
+      };
       job_titles: {
         Row: { id: string; name: string; };
         Insert: { id?: string; name: string; };
         Update: { id?: string; name?: string; };
         Relationships: [];
-      },
+      };
       contract_types: {
         Row: { id: string; name: string; };
         Insert: { id?: string; name: string; };
         Update: { id?: string; name?: string; };
         Relationships: [];
-      },
+      };
       leave_types: {
         Row: { id: string; name: string; };
         Insert: { id?: string; name: string; };
         Update: { id?: string; name?: string; };
         Relationships: [];
-      },
+      };
       tax_bands: {
         Row: { id: string; band_order: number; chargeable_amount: number | null; rate: number; };
         Insert: { id?: string; band_order: number; chargeable_amount?: number | null; rate: number; };
         Update: { id?: string; band_order?: number; chargeable_amount?: number | null; rate?: number; };
         Relationships: [];
-      },
+      };
       payroll_settings: {
         Row: { id: string; setting_key: string; setting_value: string; };
         Insert: { id?: string; setting_key: string; setting_value: string; };
         Update: { id?: string; setting_key?: string; setting_value?: string; };
         Relationships: [];
-      },
+      };
       payroll_items: {
         Row: { id: string; name: string; type: 'Addition' | 'Deduction'; calculation_type: 'Fixed' | 'Percentage'; is_taxable: boolean; };
         Insert: { id?: string; name: string; type: 'Addition' | 'Deduction'; calculation_type: 'Fixed' | 'Percentage'; is_taxable: boolean; };
         Update: { id?: string; name?: string; type?: 'Addition' | 'Deduction'; calculation_type?: 'Fixed' | 'Percentage'; is_taxable?: boolean; };
         Relationships: [];
-      },
+      };
       employee_payroll_items: {
         Row: { id: string; employee_id: string; payroll_item_id: string; value: number; };
         Insert: { id?: string; employee_id: string; payroll_item_id: string; value: number; };
         Update: { id?: string; employee_id?: string; payroll_item_id?: string; value?: number; };
         Relationships: [];
-      },
+      };
       profiles: {
         Row: { id: string; first_name: string | null; last_name: string | null; role: "admin" | "employee"; };
         Insert: { id: string; first_name?: string | null; last_name?: string | null; role?: "admin" | "employee"; };
         Update: { id?: string; first_name?: string | null; last_name?: string | null; role?: "admin" | "employee"; };
         Relationships: [];
-      },
-      employees: { 
-          Row: { id: string; profile_id: string | null; full_name: string; nrc: string; tpin: string | null; napsa_number: string | null; job_title_id: string | null; department_id: string | null; contract_type_id: string | null; status: "Active" | "On Leave" | "Terminated"; hire_date: string | null; salary: number; email: string; phone: string | null; profile_pic_url: string | null; employee_number: string | null; social_security_number: string | null; nhis_id: string | null; grade: string | null; pay_point: string | null; bank_name: string | null; account_number: string | null; division: string | null; }; 
-          Insert: { id?: string; profile_id?: string | null; full_name: string; nrc: string; tpin?: string | null; napsa_number?: string | null; job_title_id?: string | null; department_id?: string | null; contract_type_id?: string | null; status?: "Active" | "On Leave" | "Terminated"; hire_date?: string | null; salary: number; email: string; phone?: string | null; profile_pic_url?: string | null; employee_number?: string | null; social_security_number?: string | null; nhis_id?: string | null; grade?: string | null; pay_point?: string | null; bank_name?: string | null; account_number?: string | null; division?: string | null; }; 
-          Update: { id?: string; profile_id?: string | null; full_name?: string; nrc?: string; tpin?: string | null; napsa_number?: string | null; job_title_id?: string | null; department_id?: string | null; contract_type_id?: string | null; status?: "Active" | "On Leave" | "Terminated"; hire_date?: string | null; salary?: number; email?: string; phone?: string | null; profile_pic_url?: string | null; employee_number?: string | null; social_security_number?: string | null; nhis_id?: string | null; grade?: string | null; pay_point?: string | null; bank_name?: string | null; account_number?: string | null; division?: string | null; }; 
-          Relationships: [];
-      },
+      };
+      employees: {
+        Row: { id: string; profile_id: string | null; full_name: string; nrc: string; tpin: string | null; napsa_number: string | null; job_title_id: string | null; department_id: string | null; contract_type_id: string | null; status: "Active" | "On Leave" | "Terminated"; hire_date: string | null; salary: number; email: string; phone: string | null; profile_pic_url: string | null; employee_number: string | null; social_security_number: string | null; nhis_id: string | null; grade: string | null; pay_point: string | null; bank_name: string | null; account_number: string | null; division: string | null; };
+        Insert: { id?: string; profile_id?: string | null; full_name: string; nrc: string; tpin?: string | null; napsa_number?: string | null; job_title_id?: string | null; department_id?: string | null; contract_type_id?: string | null; status?: "Active" | "On Leave" | "Terminated"; hire_date?: string | null; salary: number; email: string; phone?: string | null; profile_pic_url?: string | null; employee_number?: string | null; social_security_number?: string | null; nhis_id?: string | null; grade?: string | null; pay_point?: string | null; bank_name?: string | null; account_number?: string | null; division?: string | null; };
+        Update: { id?: string; profile_id?: string | null; full_name?: string; nrc?: string; tpin?: string | null; napsa_number?: string | null; job_title_id?: string | null; department_id?: string | null; contract_type_id?: string | null; status?: "Active" | "On Leave" | "Terminated"; hire_date?: string | null; salary?: number; email?: string; phone?: string | null; profile_pic_url?: string | null; employee_number?: string | null; social_security_number?: string | null; nhis_id?: string | null; grade?: string | null; pay_point?: string | null; bank_name?: string | null; account_number?: string | null; division?: string | null; };
+        Relationships: [];
+      };
       leave_requests: {
         Row: { id: string; employee_id: string; leave_type_id: string; start_date: string; end_date: string; status: "Pending" | "Approved" | "Rejected"; days: number; created_at: string; reviewed_by: string | null; reviewed_at: string | null; };
         Insert: { id?: string; employee_id: string; leave_type_id: string; start_date: string; end_date: string; status?: "Pending" | "Approved" | "Rejected"; days: number; created_at?: string; reviewed_by?: string | null; reviewed_at?: string | null; };
         Update: { id?: string; employee_id?: string; leave_type_id?: string; start_date?: string; end_date?: string; status?: "Pending" | "Approved" | "Rejected"; days?: number; created_at?: string; reviewed_by?: string | null; reviewed_at?: string | null; };
         Relationships: [];
-      },
+      };
       payroll_runs: {
         Row: { id: string; run_date: string; month: number; year: number; status: string; processed_by: string | null; created_at: string };
         Insert: { id?: string; run_date: string; month: number; year: number; status: string; processed_by?: string | null; created_at?: string };
         Update: { id?: string; run_date?: string; month?: number; year?: number; status?: string; processed_by?: string | null; created_at?: string };
         Relationships: [];
-      },
+      };
       payroll_details: {
         Row: { id: string; payroll_run_id: string; employee_id: string; basic_salary: number; gross_pay: number; paye: number; napsa: number; nhima: number; net_pay: number; breakdown: Json; taxable_income: number };
         Insert: { id?: string; payroll_run_id: string; employee_id: string; basic_salary: number; gross_pay: number; paye: number; napsa: number; nhima: number; net_pay: number; breakdown: Json; taxable_income: number };
         Update: { id?: string; payroll_run_id?: string; employee_id?: string; basic_salary?: number; gross_pay?: number; paye?: number; napsa?: number; nhima?: number; net_pay?: number; breakdown?: Json; taxable_income?: number };
         Relationships: [];
-      },
+      };
       employee_documents: {
         Row: { id: string; employee_id: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at: string; };
         Insert: { id?: string; employee_id: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at?: string; };
         Update: { id?: string; employee_id?: string; file_name?: string; file_path?: string; file_type?: string; file_size?: number; uploaded_at?: string; };
         Relationships: [];
-      },
-       policy_documents: {
+      };
+      policy_documents: {
         Row: { id: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at: string; };
         Insert: { id?: string; file_name: string; file_path: string; file_type: string; file_size: number; uploaded_at?: string; };
         Update: { id?: string; file_name?: string; file_path?: string; file_type?: string; file_size?: number; uploaded_at?: string; };
         Relationships: [];
-      },
+      };
       company_holidays: {
         Row: { id: string; name: string; holiday_date: string; };
         Insert: { id?: string; name: string; holiday_date: string; };
         Update: { id?: string; name?: string; holiday_date?: string; };
         Relationships: [];
-      },
+      };
       leave_balances: {
         Row: { id: string; employee_id: string; leave_type_id: string; balance_days: number; };
         Insert: { id?: string; employee_id: string; leave_type_id: string; balance_days: number; };
         Update: { id?: string; employee_id?: string; leave_type_id?: string; balance_days?: number; };
         Relationships: [];
       }
-    },
-    Views: {},
-    Functions: {},
+    };
+    Views: {};
+    Functions: {};
   }
 }
 

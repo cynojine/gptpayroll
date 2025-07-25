@@ -1,32 +1,22 @@
 import * as React from 'react';
 import { TaxBand } from '../../types';
 import * as api from '../../services/api';
-import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../contexts/ToastContext';
 
-export const TaxBandManager: React.FC = () => {
+interface TaxBandManagerProps {
+    bands: TaxBand[];
+    onDataChange: () => void;
+}
+
+export const TaxBandManager: React.FC<TaxBandManagerProps> = ({ bands: initialBands, onDataChange }) => {
     const { addToast } = useToast();
     const [bands, setBands] = React.useState<TaxBand[]>([]);
-    const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const loadBands = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await api.getTaxBands();
-            setBands(data.sort((a,b) => a.bandOrder - b.bandOrder));
-            setError(null);
-        } catch (err) {
-            setError('Failed to load tax bands.');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     React.useEffect(() => {
-        loadBands();
-    }, [loadBands]);
+        setBands(initialBands.sort((a, b) => a.bandOrder - b.bandOrder));
+    }, [initialBands]);
 
     const handleBandChange = (id: string, field: 'chargeableAmount' | 'rate', value: string) => {
         const numericValue = parseFloat(value);
@@ -45,6 +35,7 @@ export const TaxBandManager: React.FC = () => {
         try {
             await api.upsertTaxBands(bands);
             addToast('Tax bands updated successfully!', 'success');
+            onDataChange();
         } catch (err) {
             const msg = 'Failed to save tax bands.';
             setError(msg);
@@ -54,8 +45,7 @@ export const TaxBandManager: React.FC = () => {
         }
     };
     
-    if (loading) return <LoadingSpinner text="Loading tax bands..." />
-    if (error && !isSubmitting) return <p className="text-red-400">{error}</p>
+    if (error && !isSubmitting) return <p className="text-red-400">{error}</p>;
 
     return (
         <div className="p-4 border border-slate-700 rounded-lg bg-slate-800/50">

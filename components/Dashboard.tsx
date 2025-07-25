@@ -1,56 +1,16 @@
 import * as React from 'react';
 import { Card } from './common/Card';
-import { getEmployees, getLeaveRequests, getTaxBands, getPayrollSettings } from '../services/api';
 import { Employee, LeaveRequest, PayrollData, PayrollCalculationSettings } from '../types';
-import { LoadingSpinner } from './common/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { calculatePayrollForEmployee } from '../services/payrollCalculations';
 
-export const Dashboard: React.FC = () => {
-    const [employees, setEmployees] = React.useState<Employee[]>([]);
-    const [leaveRequests, setLeaveRequests] = React.useState<LeaveRequest[]>([]);
-    const [payrollSettings, setPayrollSettings] = React.useState<PayrollCalculationSettings | null>(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
+interface DashboardProps {
+  employees: Employee[];
+  leaveRequests: LeaveRequest[];
+  payrollSettings: PayrollCalculationSettings | null;
+}
 
-    React.useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [emps, leaves, taxBands, settings] = await Promise.all([
-                    getEmployees(true),
-                    getLeaveRequests(),
-                    getTaxBands(),
-                    getPayrollSettings()
-                ]);
-
-                const settingsMap = settings.reduce((acc, s) => {
-                    const parsedValue = parseFloat(s.settingValue);
-                    acc[s.settingKey] = isNaN(parsedValue) ? 0 : parsedValue;
-                    return acc;
-                }, {} as Record<string, number>);
-
-                const calcSettings: PayrollCalculationSettings = {
-                    taxBands,
-                    napsaRate: settingsMap.napsa_rate || 0,
-                    napsaCeiling: settingsMap.napsa_ceiling || 0,
-                    nhimaRate: settingsMap.nhima_rate || 0,
-                    nhimaMaxContribution: settingsMap.nhima_max_contribution || 0
-                };
-                
-                setPayrollSettings(calcSettings);
-                setEmployees(emps);
-                setLeaveRequests(leaves);
-                setError(null);
-            } catch (err) {
-                setError('Failed to load dashboard data.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+export const Dashboard: React.FC<DashboardProps> = ({ employees, leaveRequests, payrollSettings }) => {
 
   const totalEmployees = employees.length;
   const pendingLeaves = leaveRequests.filter(lr => lr.status === 'Pending').length;
@@ -78,8 +38,15 @@ export const Dashboard: React.FC = () => {
   
   const COLORS = ['#10B981', '#3B82F6', '#F97316', '#8B5CF6', '#F59E0B'];
 
-  if (loading) return <div className="flex justify-center items-center h-full"><LoadingSpinner text="Loading Dashboard..." /></div>;
-  if (error) return <div className="text-center text-red-400 p-8">{error}</div>
+  if (!payrollSettings) {
+    return (
+      <Card>
+        <div className="text-center text-yellow-400 p-8">
+          Payroll settings have not been loaded. Please configure them on the Settings page to see dashboard analytics.
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8">

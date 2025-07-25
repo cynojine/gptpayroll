@@ -2,44 +2,26 @@ import * as React from 'react';
 import { Card } from './common/Card';
 import { Table } from './common/Table';
 import { Employee } from '../types';
-import { getEmployees } from '../services/api';
-import { LoadingSpinner } from './common/LoadingSpinner';
 import { AddEmployeeModal } from './employees/AddEmployeeModal';
 import { EmployeeDetail } from './employees/EmployeeDetail';
 
-export const EmployeeList: React.FC = () => {
-  const [employees, setEmployees] = React.useState<Employee[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+interface EmployeeListProps {
+  employees: Employee[];
+  onDataChange: () => void;
+}
+
+export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onDataChange }) => {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
 
-  const fetchEmployees = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getEmployees();
-      setEmployees(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch employees.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-  
   const handleEmployeeAdded = () => {
     setIsAddModalOpen(false);
-    fetchEmployees(); // Refresh the list
+    onDataChange(); // Refresh the list from the parent
   }
   
   const handleEmployeeDeleted = () => {
     setSelectedEmployeeId(null);
-    fetchEmployees();
+    onDataChange(); // Refresh the list from the parent
   }
 
   const columns = [
@@ -91,6 +73,7 @@ export const EmployeeList: React.FC = () => {
         employeeId={selectedEmployeeId} 
         onBack={() => setSelectedEmployeeId(null)}
         onEmployeeDeleted={handleEmployeeDeleted}
+        onEmployeeUpdated={onDataChange}
       />
     );
   }
@@ -107,9 +90,7 @@ export const EmployeeList: React.FC = () => {
             Add Employee
           </button>
         </div>
-        {loading && <LoadingSpinner />}
-        {error && <p className="text-center text-red-400">{error}</p>}
-        {!loading && !error && <Table columns={columns} data={employees} />}
+        <Table columns={columns} data={employees} />
       </Card>
       
       <AddEmployeeModal 

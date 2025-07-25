@@ -6,7 +6,11 @@ import * as api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 
-export const BrandingManager: React.FC = () => {
+interface BrandingManagerProps {
+    onDataChange: () => void;
+}
+
+export const BrandingManager: React.FC<BrandingManagerProps> = ({ onDataChange }) => {
     const { addToast } = useToast();
     const [settings, setSettings] = React.useState<BrandingSettings | null>(null);
     const [loading, setLoading] = React.useState(true);
@@ -15,23 +19,22 @@ export const BrandingManager: React.FC = () => {
     const [logoFile, setLogoFile] = React.useState<File | null>(null);
     const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
 
-    const loadSettings = React.useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await api.getBrandingSettings();
-            setSettings(data);
-            setLogoPreview(data.logoUrl);
-            setError(null);
-        } catch (err: any) {
-            setError(err.message || 'Failed to load branding settings.');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     React.useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                setLoading(true);
+                const data = await api.getBrandingSettings();
+                setSettings(data);
+                setLogoPreview(data.logoUrl);
+                setError(null);
+            } catch (err: any) {
+                setError(err.message || 'Failed to load branding settings.');
+            } finally {
+                setLoading(false);
+            }
+        };
         loadSettings();
-    }, [loadSettings]);
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -71,7 +74,7 @@ export const BrandingManager: React.FC = () => {
 
             addToast('Branding settings saved successfully!', 'success');
             setLogoFile(null); // Clear file after upload
-            loadSettings(); // Reload to confirm changes
+            onDataChange(); // Trigger global refresh
         } catch (err: any) {
             setError(err.message || 'Failed to save settings.');
             addToast('Failed to save settings.', 'error');
